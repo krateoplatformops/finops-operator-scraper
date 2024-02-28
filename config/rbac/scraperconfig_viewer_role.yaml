@@ -1,0 +1,27 @@
+# permissions for end users to view scraperconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: scraperconfig-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: operator-scraper
+    app.kubernetes.io/part-of: operator-scraper
+    app.kubernetes.io/managed-by: kustomize
+  name: scraperconfig-viewer-role
+rules:
+- apiGroups:
+  - finops.krateo.io
+  resources:
+  - scraperconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - finops.krateo.io
+  resources:
+  - scraperconfigs/status
+  verbs:
+  - get

@@ -1,0 +1,12 @@
+apiVersion: finops.krateo.io/v1
+kind: ScraperConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: scraperconfig
+    app.kubernetes.io/instance: scraperconfig-sample
+    app.kubernetes.io/part-of: operator-scraper
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: operator-scraper
+  name: scraperconfig-sample
+spec:
+  # TODO(user): Add fields here

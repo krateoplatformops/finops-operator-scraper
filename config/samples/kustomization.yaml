@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- finops_v1_scraperconfig.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples
