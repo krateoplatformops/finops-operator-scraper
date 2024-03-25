@@ -1,10 +1,16 @@
 # operator-scraper
-Operator to create scrapers.
+This repository is part of a wider exporting architecture for the FinOps Cost and Usage Specification (FOCUS). This component is tasked with the creation of a generic scraper, according to the description given in a Custom Resource (CR). After the creation of the CR, the operator reads the "scraper" configuration part and creates two resources: a deployment with a generic prometheus scraper inside and a configmap containing the configuration. The scraper parses the prometheus data and obtains the given database-config to upload all metrics to a database.
 
-## Description
+## Dependencies
+There is the need to have an active Databricks cluster, with SQL warehouse and notebooks configured. Its login details must be placed in the database-config CR.
 
-## Getting Started
+## Configuration
+The database-config CR is required.
+The deployment of the operator needs a secret for the repository, called ==registry-credentials== in the namespace ==operator-scraper-system==.
 
+The scraper container is created in the namespace of the CR. The scraper container looks for a secret in the CR namespace called ==registry-credentials-default==
+
+## Installation
 ### Prerequisites
 - go version v1.21.0+
 - docker version 17.03+.
@@ -66,36 +72,6 @@ make uninstall
 make undeploy
 ```
 
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/operator-scraper:tag
-```
-
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
-
-2. Using the installer
-
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/operator-scraper/<tag or branch>/dist/install.yaml
-```
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
 ## License
 
 Copyright 2024.
@@ -111,4 +87,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+## Databricks token
+The Databricks token can be obtained through the dashboard UI.
 
