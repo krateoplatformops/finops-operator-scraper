@@ -6,9 +6,9 @@ There is the need to have an active Databricks cluster, with SQL warehouse and n
 
 ## Configuration
 The database-config CR is required.
-The deployment of the operator needs a secret for the repository, called ==registry-credentials== in the namespace ==operator-scraper-system==.
+The deployment of the operator needs a secret for the repository, called `registry-credentials` in the namespace `operator-scraper-system`.
 
-The scraper container is created in the namespace of the CR. The scraper container looks for a secret in the CR namespace called ==registry-credentials-default==
+The scraper container is created in the namespace of the CR. The scraper container looks for a secret in the CR namespace called `registry-credentials-default`
 
 ## Installation
 ### Prerequisites
