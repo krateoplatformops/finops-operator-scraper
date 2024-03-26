@@ -63,7 +63,7 @@ func GetGenericScraperDeployment(scraperConfig finopsv1.ScraperConfig) (*appsv1.
 					Containers: []corev1.Container{
 						{
 							Name:            "scraper",
-							Image:           repository + "/prometheus-scraper-generic:0.1",
+							Image:           repository + "/finops-prometheus-scraper-generic:0.1.0",
 							ImagePullPolicy: corev1.PullAlways,
 							VolumeMounts: []corev1.VolumeMount{
 								{
