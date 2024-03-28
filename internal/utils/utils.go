@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
@@ -11,7 +12,7 @@ import (
 	finopsv1 "operator-scraper/api/v1"
 )
 
-var repository = os.Getenv("REPO")
+var repository = strings.TrimSuffix(os.Getenv("REPO"), "/")
 
 type ScraperConfigFile struct {
 	DatabaseConfigRef DatabaseConfigRef `yaml:"databaseConfigRef"`
@@ -63,7 +64,7 @@ func GetGenericScraperDeployment(scraperConfig finopsv1.ScraperConfig) (*appsv1.
 					Containers: []corev1.Container{
 						{
 							Name:            "scraper",
-							Image:           repository + "/finops-prometheus-scraper-generic:0.1.0",
+							Image:           repository + "/finops-prometheus-scraper-generic:latest",
 							ImagePullPolicy: corev1.PullAlways,
 							VolumeMounts: []corev1.VolumeMount{
 								{
