@@ -19,15 +19,9 @@ package v1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
 
-// ScraperConfigSpec defines the desired state of ScraperConfig
-type ScraperConfigSpec struct {
-	TableName                string                   `yaml:"tableName" json:"tableName"`
-	PollingIntervalHours     int                      `yaml:"pollingIntervalHours" json:"pollingIntervalHours"`
-	Url                      string                   `yaml:"url" json:"url"`
-	ScraperDatabaseConfigRef ScraperDatabaseConfigRef `yaml:"scraperDatabaseConfigRef" json:"scraperDatabaseConfigRef"`
-}
+	operatorPackage "github.com/krateoplatformops/finops-operator-exporter/api/v1"
+)
 
 // ScraperConfigStatus defines the observed state of ScraperConfig
 type ScraperConfigStatus struct {
@@ -44,8 +38,8 @@ type ScraperConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ScraperConfigSpec   `json:"spec,omitempty"`
-	Status ScraperConfigStatus `json:"status,omitempty"`
+	Spec   operatorPackage.ScraperConfig `json:"spec,omitempty"`
+	Status ScraperConfigStatus           `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -59,9 +53,4 @@ type ScraperConfigList struct {
 
 func init() {
 	SchemeBuilder.Register(&ScraperConfig{}, &ScraperConfigList{})
-}
-
-type ScraperDatabaseConfigRef struct {
-	Name      string `yaml:"name" json:"name"`
-	Namespace string `yaml:"namespace" json:"namespace"`
 }

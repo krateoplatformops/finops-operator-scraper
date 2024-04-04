@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"operator-scraper/test/utils"
+	"github.com/krateoplatformops/finops-operator-scraper/test/utils"
 )
 
 const namespace = "operator-scraper-system"

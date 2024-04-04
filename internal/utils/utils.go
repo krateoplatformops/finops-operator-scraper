@@ -9,19 +9,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	finopsv1 "operator-scraper/api/v1"
+	operatorPackage "github.com/krateoplatformops/finops-operator-exporter/api/v1"
+	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
 )
 
 var repository = strings.TrimSuffix(os.Getenv("REPO"), "/")
 
 type ScraperConfigFile struct {
-	DatabaseConfigRef DatabaseConfigRef `yaml:"databaseConfigRef"`
-	Exporter          Exporter          `yaml:"exporter"`
-}
-
-type DatabaseConfigRef struct {
-	Name      string `yaml:"name"`
-	Namespace string `yaml:"namespace"`
+	DatabaseConfigRef operatorPackage.ScraperDatabaseConfigRef `yaml:"databaseConfigRef"`
+	Exporter          Exporter                                 `yaml:"exporter"`
 }
 
 type Exporter struct {
@@ -99,7 +95,7 @@ func GetGenericScraperDeployment(scraperConfig finopsv1.ScraperConfig) (*appsv1.
 
 func GetGenericScraperConfigMap(scraperConfig finopsv1.ScraperConfig) (*corev1.ConfigMap, error) {
 	scraperConfigFile := ScraperConfigFile{}
-	databaseConfigRef := DatabaseConfigRef{}
+	databaseConfigRef := operatorPackage.ScraperDatabaseConfigRef{}
 	exporter := Exporter{}
 
 	exporter.Url = scraperConfig.Spec.Url

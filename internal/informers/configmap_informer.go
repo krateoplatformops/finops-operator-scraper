@@ -28,8 +28,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	finopsv1 "operator-scraper/api/v1"
-	"operator-scraper/internal/utils"
+	"github.com/krateoplatformops/finops-operator-scraper/internal/utils"
+
+	operatorPackage "github.com/krateoplatformops/finops-operator-exporter/api/v1"
+	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -128,7 +130,7 @@ func checkConfigMap(configMap corev1.ConfigMap, scraperConfig finopsv1.ScraperCo
 	}
 
 	scraperConfigFile := utils.ScraperConfigFile{}
-	databaseConfigRef := utils.DatabaseConfigRef{}
+	databaseConfigRef := operatorPackage.ScraperDatabaseConfigRef{}
 	exporter := utils.Exporter{}
 
 	exporter.Url = scraperConfig.Spec.Url

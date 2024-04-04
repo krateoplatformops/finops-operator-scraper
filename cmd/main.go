@@ -34,10 +34,11 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	finopsv1 "operator-scraper/api/v1"
+	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
 
-	"operator-scraper/internal/controller"
-	informer "operator-scraper/internal/informers"
+	informer "github.com/krateoplatformops/finops-operator-scraper/internal/informers"
+
+	"github.com/krateoplatformops/finops-operator-scraper/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
 

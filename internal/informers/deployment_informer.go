@@ -26,8 +26,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	finopsv1 "operator-scraper/api/v1"
-	"operator-scraper/internal/utils"
+	"github.com/krateoplatformops/finops-operator-scraper/internal/utils"
+
+	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 )

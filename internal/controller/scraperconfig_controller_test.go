@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	finopsv1 "operator-scraper/api/v1"
+	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
 )
 
 var _ = Describe("ScraperConfig Controller", func() {
