@@ -37,7 +37,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: ScraperConfigSpec defines the desired state of ScraperConfig
             properties:
               pollingIntervalHours:
                 type: integer
@@ -59,7 +58,6 @@ spec:
             - pollingIntervalHours
             - scraperDatabaseConfigRef
             - tableName
-            - url
             type: object
           status:
             description: ScraperConfigStatus defines the observed state of ScraperConfig
