@@ -39,11 +39,11 @@ type ScraperConfigReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=finops.krateo.io,resources=scraperconfigs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=finops.krateo.io,resources=scraperconfigs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=finops.krateo.io,resources=scraperconfigs/finalizers,verbs=update
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;create;update
-//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;create;update
+//+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=apps,namespace=finops,resources=deployments,verbs=get;create;update;watch;list
+//+kubebuilder:rbac:groups=core,namespace=finops,resources=configmaps,verbs=get;create;update;list
 
 func (r *ScraperConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.Log.WithValues("FinOps.V1", req.NamespacedName)

@@ -41,11 +41,6 @@ type ConfigMapReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=finops.krateo.io,resources=scraperconfigs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=finops.krateo.io,resources=scraperconfigs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=finops.krateo.io,resources=scraperconfigs/finalizers,verbs=update
-//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;create;list;update
-
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.Log.WithValues("FinOps.V1", "CONFIGMAP")
 	var err error
