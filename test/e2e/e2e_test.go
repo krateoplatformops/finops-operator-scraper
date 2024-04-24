@@ -27,7 +27,7 @@ import (
 	"github.com/krateoplatformops/finops-operator-scraper/test/utils"
 )
 
-const namespace = "operator-scraper-system"
+const namespace = "finops"
 
 var _ = Describe("controller", Ordered, func() {
 	BeforeAll(func() {
