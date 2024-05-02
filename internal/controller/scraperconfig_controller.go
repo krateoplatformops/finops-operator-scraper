@@ -56,37 +56,28 @@ func (r *ScraperConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{Requeue: false}, client.IgnoreNotFound(err)
 	}
 
-	if scraperConfig.Status.ConfigMaps == nil {
-		scraperConfig.Status.ConfigMaps = make(map[string]corev1.ObjectReference)
-	}
-
 	// Check if a deployment for this configuration already exists
-	if len(scraperConfig.Status.ActiveScrapers) > 0 {
-		for _, objRef := range scraperConfig.Status.ActiveScrapers {
-			existingObjDeployment := &appsv1.Deployment{}
+	existingObjDeployment := &appsv1.Deployment{}
+	ExistingDeploymentNamespace := scraperConfig.Status.ActiveScraper.Namespace
+	ExistingDeploymentName := scraperConfig.Status.ActiveScraper.Name
+	ExistingConfigMapNamespace := scraperConfig.Status.ConfigMap.Namespace
+	ExistingConfigMapName := scraperConfig.Status.ConfigMap.Name
 
-			// ConfigMap status objRef and pointer for GET
-			objRefConfigMap := scraperConfig.Status.ConfigMaps[objRef.Namespace+objRef.Name]
-			existingObjConfigMap := &corev1.ConfigMap{}
+	// ConfigMap status objRef and pointer for GET
+	existingObjConfigMap := &corev1.ConfigMap{}
 
-			// Check if all elements of the deployment exist
+	// Check if all elements of the deployment exist
 
-			_ = r.Get(ctx, types.NamespacedName{Namespace: objRef.Namespace, Name: objRef.Name}, existingObjDeployment)
-			_ = r.Get(ctx, types.NamespacedName{Namespace: objRefConfigMap.Namespace, Name: objRefConfigMap.Name}, existingObjConfigMap)
-			// If any the objects does not exist, something happend, reconcile spec-status
-			if existingObjDeployment.Name == "" || existingObjConfigMap.Name == "" {
-				if err = r.createScraperFromScratch(ctx, req, scraperConfig); err != nil {
-					return ctrl.Result{}, err
-				}
-				return ctrl.Result{}, nil
-			}
-		}
-	} else {
+	_ = r.Get(ctx, types.NamespacedName{Namespace: ExistingDeploymentNamespace, Name: ExistingDeploymentName}, existingObjDeployment)
+	_ = r.Get(ctx, types.NamespacedName{Namespace: ExistingConfigMapNamespace, Name: ExistingConfigMapName}, existingObjConfigMap)
+	// If any the objects does not exist, something happend, reconcile spec-status
+	if existingObjDeployment.Name == "" || existingObjConfigMap.Name == "" {
 		if err = r.createScraperFromScratch(ctx, req, scraperConfig); err != nil {
 			return ctrl.Result{}, err
 		}
-
 		return ctrl.Result{}, nil
+	} else if err = r.checkScraperStatus(ctx, scraperConfig); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
@@ -139,15 +130,35 @@ func (r *ScraperConfigReconciler) createScraperFromScratch(ctx context.Context, 
 		}
 	}
 
-	scraperConfig.Status.ActiveScrapers = append(scraperConfig.Status.ActiveScrapers, corev1.ObjectReference{
+	scraperConfig.Status.ActiveScraper = corev1.ObjectReference{
 		Kind:      genericScraperDeployment.Kind,
 		Namespace: genericScraperDeployment.Namespace,
 		Name:      genericScraperDeployment.Name,
-	})
-	scraperConfig.Status.ConfigMaps[genericScraperDeployment.Namespace+genericScraperDeployment.Name] = corev1.ObjectReference{
+	}
+	scraperConfig.Status.ConfigMap = corev1.ObjectReference{
 		Kind:      genericScraperConfigMap.Kind,
 		Namespace: genericScraperConfigMap.Namespace,
 		Name:      genericScraperConfigMap.Name,
 	}
+	return nil
+}
+
+func (r *ScraperConfigReconciler) checkScraperStatus(ctx context.Context, scraperConfig finopsv1.ScraperConfig) error {
+	genericExporterConfigMap, err := utils.GetGenericScraperConfigMap(scraperConfig)
+	if err != nil {
+		return err
+	}
+	genericExporterDeployment, _ := utils.GetGenericScraperDeployment(scraperConfig)
+
+	err = r.Update(ctx, genericExporterConfigMap)
+	if err != nil {
+		return err
+	}
+
+	err = r.Update(ctx, genericExporterDeployment)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
