@@ -25,9 +25,8 @@ import (
 
 // ScraperConfigStatus defines the observed state of ScraperConfig
 type ScraperConfigStatus struct {
-	// A list of pointers to currently running scraper deployments.
-	ActiveScrapers []corev1.ObjectReference          `json:"active,omitempty"`
-	ConfigMaps     map[string]corev1.ObjectReference `json:"configMaps,omitempty"`
+	ActiveScraper corev1.ObjectReference `json:"active,omitempty"`
+	ConfigMap     corev1.ObjectReference `json:"configMaps,omitempty"`
 }
 
 //+kubebuilder:object:root=true
