@@ -123,7 +123,7 @@ func checkConfigMap(configMap corev1.ConfigMap, scraperConfig finopsv1.ScraperCo
 	}
 
 	scraperConfigFile := utils.ScraperConfigFile{}
-	databaseConfigRef := operatorPackage.ScraperDatabaseConfigRef{}
+	databaseConfigRef := operatorPackage.ObjectRef{}
 	exporter := utils.Exporter{}
 
 	exporter.Url = scraperConfig.Spec.Url

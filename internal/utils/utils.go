@@ -16,8 +16,8 @@ import (
 var repository = strings.TrimSuffix(os.Getenv("REPO"), "/")
 
 type ScraperConfigFile struct {
-	DatabaseConfigRef operatorPackage.ScraperDatabaseConfigRef `yaml:"databaseConfigRef"`
-	Exporter          Exporter                                 `yaml:"exporter"`
+	DatabaseConfigRef operatorPackage.ObjectRef `yaml:"databaseConfigRef"`
+	Exporter          Exporter                  `yaml:"exporter"`
 }
 
 type Exporter struct {
@@ -95,7 +95,7 @@ func GetGenericScraperDeployment(scraperConfig finopsv1.ScraperConfig) (*appsv1.
 
 func GetGenericScraperConfigMap(scraperConfig finopsv1.ScraperConfig) (*corev1.ConfigMap, error) {
 	scraperConfigFile := ScraperConfigFile{}
-	databaseConfigRef := operatorPackage.ScraperDatabaseConfigRef{}
+	databaseConfigRef := operatorPackage.ObjectRef{}
 	exporter := Exporter{}
 
 	exporter.Url = scraperConfig.Spec.Url
