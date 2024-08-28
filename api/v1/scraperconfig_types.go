@@ -17,17 +17,9 @@ limitations under the License.
 package v1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	finopsDataTypes "github.com/krateoplatformops/finops-data-types/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	operatorPackage "github.com/krateoplatformops/finops-operator-exporter/api/v1"
 )
-
-// ScraperConfigStatus defines the observed state of ScraperConfig
-type ScraperConfigStatus struct {
-	ActiveScraper corev1.ObjectReference `json:"active,omitempty"`
-	ConfigMap     corev1.ObjectReference `json:"configMaps,omitempty"`
-}
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
@@ -37,8 +29,8 @@ type ScraperConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   operatorPackage.ScraperConfig `json:"spec,omitempty"`
-	Status ScraperConfigStatus           `json:"status,omitempty"`
+	Spec   finopsDataTypes.ScraperConfigSpec   `json:"spec,omitempty"`
+	Status finopsDataTypes.ScraperConfigStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
