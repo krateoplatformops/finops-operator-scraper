@@ -60,7 +60,6 @@ spec:
             - tableName
             type: object
           status:
-            description: ScraperConfigStatus defines the observed state of ScraperConfig
             properties:
               active:
                 description: |-
