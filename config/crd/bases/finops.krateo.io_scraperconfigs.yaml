@@ -183,6 +183,11 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
+              metricType:
+                default: cost
+                type: string
+            required:
+            - metricType
             type: object
         type: object
     served: true

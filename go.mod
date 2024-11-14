@@ -3,7 +3,7 @@ module github.com/krateoplatformops/finops-operator-scraper
 go 1.21
 
 require (
-	github.com/krateoplatformops/finops-data-types v0.0.0-20240822144053-7ce9ae5c26a7
+	github.com/krateoplatformops/finops-data-types v0.0.0-20241114103324-d1c2aec150da
 	github.com/onsi/ginkgo/v2 v2.14.0
 	github.com/onsi/gomega v1.30.0
 	k8s.io/apimachinery v0.29.0
