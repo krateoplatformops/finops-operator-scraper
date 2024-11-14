@@ -103,7 +103,7 @@ func GetGenericScraperConfigMap(scraperConfig finopsv1.ScraperConfig) (*corev1.C
 	databaseConfigRef := finopsDataTypes.ObjectRef{}
 	exporter := Exporter{}
 
-	exporter.MetricType = scraperConfig.Status.MetricType
+	exporter.MetricType = scraperConfig.Spec.MetricType
 	exporter.Url = scraperConfig.Spec.Url
 	exporter.PollingIntervalHours = scraperConfig.Spec.PollingIntervalHours
 	exporter.TableName = scraperConfig.Spec.TableName

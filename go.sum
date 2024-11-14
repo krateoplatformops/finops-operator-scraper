@@ -70,6 +70,8 @@ github.com/krateoplatformops/finops-data-types v0.0.0-20240822144053-7ce9ae5c26a
 github.com/krateoplatformops/finops-data-types v0.0.0-20240822144053-7ce9ae5c26a7/go.mod h1:sBjqLz0E1UCBP5Jnz6i1c9almnmgaf3eZ8Q+fANKzs4=
 github.com/krateoplatformops/finops-data-types v0.0.0-20241114103324-d1c2aec150da h1:JbW9RC2eN7oTddgVdCqUI+nhgqbdpwZMQXVQXHvHY2w=
 github.com/krateoplatformops/finops-data-types v0.0.0-20241114103324-d1c2aec150da/go.mod h1:sBjqLz0E1UCBP5Jnz6i1c9almnmgaf3eZ8Q+fANKzs4=
+github.com/krateoplatformops/finops-data-types v0.0.0-20241114164300-a575ba009392 h1:Cd6K4/yZ/jq8YWTThXcxEJf7JkPMJvYHFKfioLASpZY=
+github.com/krateoplatformops/finops-data-types v0.0.0-20241114164300-a575ba009392/go.mod h1:sBjqLz0E1UCBP5Jnz6i1c9almnmgaf3eZ8Q+fANKzs4=
 github.com/krateoplatformops/finops-operator-exporter v0.0.0-20240714140455-0ba3f5de5546 h1:LZQI3kpAEF6uX0dfOo/N98rvyNSMXod6GxL666BvhzE=
 github.com/krateoplatformops/finops-operator-exporter v0.0.0-20240714140455-0ba3f5de5546/go.mod h1:PzdGRjH/V9BIbLEyaCu5+Kyjzw0yOTqtxTOUmcZRD8k=
 github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0=
