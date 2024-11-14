@@ -13,8 +13,6 @@ import (
 	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
 )
 
-var repository = strings.TrimSuffix(os.Getenv("REPO"), "/")
-
 type ScraperConfigFile struct {
 	DatabaseConfigRef finopsDataTypes.ObjectRef `yaml:"databaseConfigRef"`
 	Exporter          Exporter                  `yaml:"exporter"`
@@ -24,6 +22,7 @@ type Exporter struct {
 	Url                  string `yaml:"url"`
 	PollingIntervalHours int    `yaml:"pollingIntervalHours"`
 	TableName            string `yaml:"tableName"`
+	MetricType           string `yaml:"metricType"`
 }
 
 func int32Ptr(i int32) *int32 { return &i }
@@ -60,12 +59,18 @@ func GetGenericScraperDeployment(scraperConfig finopsv1.ScraperConfig) (*appsv1.
 					Containers: []corev1.Container{
 						{
 							Name:            "scraper",
-							Image:           repository + "/finops-prometheus-scraper-generic:latest",
+							Image:           strings.TrimSuffix(os.Getenv("REGISTRY"), "/") + "/finops-prometheus-scraper-generic:latest",
 							ImagePullPolicy: corev1.PullAlways,
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "config-volume",
 									MountPath: "/config",
+								},
+							},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "URL_DB_WEBSERVICE",
+									Value: os.Getenv("URL_DB_WEBSERVICE"),
 								},
 							},
 						},
@@ -84,7 +89,7 @@ func GetGenericScraperDeployment(scraperConfig finopsv1.ScraperConfig) (*appsv1.
 					},
 					ImagePullSecrets: []corev1.LocalObjectReference{
 						{
-							Name: "registry-credentials-default",
+							Name: os.Getenv("REGISTRY_CREDENTIALS"),
 						},
 					},
 				},
@@ -98,6 +103,7 @@ func GetGenericScraperConfigMap(scraperConfig finopsv1.ScraperConfig) (*corev1.C
 	databaseConfigRef := finopsDataTypes.ObjectRef{}
 	exporter := Exporter{}
 
+	exporter.MetricType = scraperConfig.Status.MetricType
 	exporter.Url = scraperConfig.Spec.Url
 	exporter.PollingIntervalHours = scraperConfig.Spec.PollingIntervalHours
 	exporter.TableName = scraperConfig.Spec.TableName

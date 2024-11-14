@@ -21,10 +21,11 @@ metadata:
   name: # DatabaseConfig name
   namespace: # DatabaseConfig namespace
 spec:
-  host: # host name for the database
-  token: # access token
-  clusterName: # generic compute cluster name
-  notebookPath: # path to the notebook 
+  username: # username string
+  passwordSecretRef: # object reference to secret with password
+    name: # secret name
+    namespace: # secret namespace
+    key: # secret key
 ---
 apiVersion: finops.krateo.io/v1
 kind: ScraperConfig
@@ -50,7 +51,7 @@ spec:
 - Access to a Kubernetes v1.11.3+ cluster.
 
 ### Dependencies
-There is the need to have an active Databricks cluster, with SQL warehouse and notebooks configured. Its login details must be placed in the database-config CR.
+You need to install CrateDB in the cluster and configure the Krateo Database Webservice.
 
 ### Installation with HELM
 ```sh
@@ -60,9 +61,8 @@ $ helm install finops-operator-scraper krateo/finops-operator-scraper
 ```
 ### Configuration
 The database-config CR is required.
-The deployment of the operator needs a secret for the repository, called `registry-credentials` in the namespace `finops`.
 
-The scraper container is created in the namespace of the CR. The scraper container looks for a secret in the CR namespace called `registry-credentials-default`
+The scraper container is created in the namespace of the CR. The scraper container looks for a secret in the CR namespace called `registry-credentials`, configurable in the HELM chart.
 
 ### Databricks token
 The Databricks token can be obtained through the dashboard UI.
