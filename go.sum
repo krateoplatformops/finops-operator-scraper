@@ -66,6 +66,8 @@ github.com/krateoplatformops/finops-data-types v0.0.0-20241114164300-a575ba00939
 github.com/krateoplatformops/finops-data-types v0.0.0-20241114164300-a575ba009392/go.mod h1:sBjqLz0E1UCBP5Jnz6i1c9almnmgaf3eZ8Q+fANKzs4=
 github.com/krateoplatformops/finops-data-types v0.0.0-20241125143309-9579e6e68ff0 h1:urIMKyQlxa7LWQgjEkIeiIyqb+kPq/qCNdMGQzOD9Is=
 github.com/krateoplatformops/finops-data-types v0.0.0-20241125143309-9579e6e68ff0/go.mod h1:T1nMm8Neu4S9ljh7jSip9bqWR4g6zlkheCYgF1ZU/18=
+github.com/krateoplatformops/finops-data-types v0.0.0-20241127150435-f1bd73643454 h1:EM1Gj/JOv0/SKZdwQLKK6BGUitwKcvQJS6KhELDb6/k=
+github.com/krateoplatformops/finops-data-types v0.0.0-20241127150435-f1bd73643454/go.mod h1:T1nMm8Neu4S9ljh7jSip9bqWR4g6zlkheCYgF1ZU/18=
 github.com/krateoplatformops/provider-runtime v0.9.0 h1:ZvgJbfmv4Zx+Z/a4sat6xF884dJa4BtUGZ+HUk4UeEg=
 github.com/krateoplatformops/provider-runtime v0.9.0/go.mod h1:A0OKDAXE9KnX1GyhZH0UpZhpn15xQANoc4KVYLsfZM0=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
