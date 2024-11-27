@@ -18,116 +18,281 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	finopsDataTypes "github.com/krateoplatformops/finops-data-types/api/v1"
 	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
+	prv1 "github.com/krateoplatformops/provider-runtime/apis/common/v1"
+	"github.com/krateoplatformops/provider-runtime/pkg/controller"
+	"github.com/krateoplatformops/provider-runtime/pkg/event"
+	"github.com/krateoplatformops/provider-runtime/pkg/logging"
+	"github.com/krateoplatformops/provider-runtime/pkg/ratelimiter"
+	"github.com/krateoplatformops/provider-runtime/pkg/reconciler"
+	"github.com/krateoplatformops/provider-runtime/pkg/resource"
 
-	"github.com/krateoplatformops/finops-operator-scraper/internal/utils"
+	clientHelper "github.com/krateoplatformops/finops-operator-scraper/internal/helpers/kube/client"
+	"github.com/krateoplatformops/finops-operator-scraper/internal/helpers/kube/comparators"
+	utils "github.com/krateoplatformops/finops-operator-scraper/internal/utils"
 )
 
-// ScraperConfigReconciler reconciles a ScraperConfig object
-type ScraperConfigReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
-}
+const (
+	errNotScraperConfig = "managed resource is not an scraper scraper config custom resource"
+)
 
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs/finalizers,verbs=update
-//+kubebuilder:rbac:groups=apps,namespace=finops,resources=deployments,verbs=get;create;update;watch;list
-//+kubebuilder:rbac:groups=core,namespace=finops,resources=configmaps,verbs=get;create;update;list
+//+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs,verbs=get;create;update
+//+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=databaseconfigs,verbs=get;create;update
+//+kubebuilder:rbac:groups=apps,namespace=finops,resources=deployments,verbs=get;create;delete;list;update;watch
+//+kubebuilder:rbac:groups=core,namespace=finops,resources=configmaps,verbs=get;create;delete;list;update
 
-func (r *ScraperConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.Log.WithValues("FinOps.V1", req.NamespacedName)
-	var err error
+func Setup(mgr ctrl.Manager, o controller.Options) error {
+	name := reconciler.ControllerName(finopsv1.GroupKind)
 
-	// Get the request object
-	var scraperConfig finopsv1.ScraperConfig
-	if err := r.Get(ctx, req.NamespacedName, &scraperConfig); err != nil {
-		logger.Error(err, "unable to fetch finopsv1.ScraperConfig")
-		return ctrl.Result{Requeue: false}, client.IgnoreNotFound(err)
+	log := o.Logger.WithValues("controller", name)
+	log.Info("controller", "name", name)
+
+	recorder := mgr.GetEventRecorderFor(name)
+
+	r := reconciler.NewReconciler(mgr,
+		resource.ManagedKind(finopsv1.GroupVersionKind),
+		reconciler.WithExternalConnecter(&connector{
+			log:          log,
+			recorder:     recorder,
+			pollInterval: o.PollInterval,
+		}),
+		reconciler.WithPollInterval(o.PollInterval),
+		reconciler.WithLogger(log),
+		reconciler.WithRecorder(event.NewAPIRecorder(recorder)))
+
+	log.Debug("polling rate", "rate", o.PollInterval)
+
+	return ctrl.NewControllerManagedBy(mgr).
+		Named(name).
+		WithOptions(o.ForControllerRuntime()).
+		For(&finopsv1.ScraperConfig{}).
+		Complete(ratelimiter.New(name, r, o.GlobalRateLimiter))
+}
+
+type connector struct {
+	pollInterval time.Duration
+	log          logging.Logger
+	recorder     record.EventRecorder
+}
+
+func (c *connector) Connect(ctx context.Context, mg resource.Managed) (reconciler.ExternalClient, error) {
+	cfg, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve rest.InClusterConfig: %w", err)
+	}
+
+	dynClient, err := clientHelper.New(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create dynamic client: %w", err)
+	}
+
+	return &external{
+		cfg:             cfg,
+		dynClient:       dynClient,
+		sinceLastUpdate: make(map[string]time.Time),
+		pollInterval:    c.pollInterval,
+		log:             c.log,
+		rec:             c.recorder,
+	}, nil
+}
+
+type external struct {
+	cfg             *rest.Config
+	dynClient       *dynamic.DynamicClient
+	sinceLastUpdate map[string]time.Time
+	pollInterval    time.Duration
+	log             logging.Logger
+	rec             record.EventRecorder
+}
+
+func (c *external) Disconnect(_ context.Context) error {
+	return nil // NOOP
+}
+
+func (e *external) Observe(ctx context.Context, mg resource.Managed) (reconciler.ExternalObservation, error) {
+	scraperConfig, ok := mg.(*finopsv1.ScraperConfig)
+	if !ok {
+		return reconciler.ExternalObservation{}, errors.New(errNotScraperConfig)
 	}
 
 	// Check if a deployment for this configuration already exists
-	existingObjDeployment := &appsv1.Deployment{}
-	ExistingDeploymentNamespace := scraperConfig.Status.ActiveScraper.Namespace
-	ExistingDeploymentName := scraperConfig.Status.ActiveScraper.Name
-	ExistingConfigMapNamespace := scraperConfig.Status.ConfigMap.Namespace
-	ExistingConfigMapName := scraperConfig.Status.ConfigMap.Name
+	existingObjDeployment, err := clientHelper.GetObj(ctx,
+		&finopsDataTypes.ObjectRef{
+			Name:      scraperConfig.Status.ActiveScraper.Name,
+			Namespace: scraperConfig.Status.ActiveScraper.Namespace},
+		"apps/v1", "deployments", e.dynClient)
+	if err != nil {
+		e.rec.Eventf(scraperConfig, corev1.EventTypeWarning, "could not get scraperconfig deployment", "object name: %s", scraperConfig.Status.ActiveScraper.Name)
+		return reconciler.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
 
 	// ConfigMap status objRef and pointer for GET
-	existingObjConfigMap := &corev1.ConfigMap{}
+	existingObjConfigMap, err := clientHelper.GetObj(ctx,
+		&finopsDataTypes.ObjectRef{
+			Name:      scraperConfig.Status.ConfigMap.Name,
+			Namespace: scraperConfig.Status.ConfigMap.Namespace},
+		"v1", "configmaps", e.dynClient)
+	if err != nil {
+		e.rec.Eventf(scraperConfig, corev1.EventTypeWarning, "could not get scraperconfig configmap", "object name: %s", scraperConfig.Status.ConfigMap.Name)
+		return reconciler.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
 
 	// Check if all elements of the deployment exist
-
-	_ = r.Get(ctx, types.NamespacedName{Namespace: ExistingDeploymentNamespace, Name: ExistingDeploymentName}, existingObjDeployment)
-	_ = r.Get(ctx, types.NamespacedName{Namespace: ExistingConfigMapNamespace, Name: ExistingConfigMapName}, existingObjConfigMap)
 	// If any the objects does not exist, something happend, reconcile spec-status
-	if existingObjDeployment.Name == "" || existingObjConfigMap.Name == "" {
-		if err = r.createScraperFromScratch(ctx, req, scraperConfig); err != nil {
-			return ctrl.Result{}, err
+	if existingObjDeployment.GetName() == "" || existingObjConfigMap.GetName() == "" {
+		return reconciler.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	} else {
+		status, notUpToDate, err := checkScraperStatus(ctx, scraperConfig, e.dynClient)
+		if err != nil {
+			return reconciler.ExternalObservation{
+				ResourceExists: false,
+			}, fmt.Errorf("could not check scraper status: %v", err)
 		}
-		return ctrl.Result{}, nil
-	} else if err = r.checkScraperStatus(ctx, scraperConfig); err != nil {
-		return ctrl.Result{}, err
+		scraperConfig.SetConditions(prv1.Available())
+		if !status {
+			e.rec.Eventf(scraperConfig, corev1.EventTypeWarning, "scraper resources not up-to-date", "object name: %s - first not up-to-date: %s", scraperConfig.Name, notUpToDate)
+			return reconciler.ExternalObservation{
+				ResourceExists:   true,
+				ResourceUpToDate: false,
+			}, nil
+		}
+		return reconciler.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true,
+		}, nil
+	}
+}
+
+func (e *external) Create(ctx context.Context, mg resource.Managed) error {
+	scraperConfig, ok := mg.(*finopsv1.ScraperConfig)
+	if !ok {
+		return errors.New(errNotScraperConfig)
 	}
 
-	return ctrl.Result{}, nil
+	scraperConfig.SetConditions(prv1.Creating())
+
+	err := createScraperFromScratch(ctx, scraperConfig, e.dynClient)
+	if err != nil {
+		return err
+	}
+
+	e.rec.Eventf(scraperConfig, corev1.EventTypeNormal, "Completed create", "object name: %s", scraperConfig.Name)
+
+	return nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *ScraperConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&finopsv1.ScraperConfig{}).
-		Complete(r)
+func (e *external) Update(ctx context.Context, mg resource.Managed) error {
+	scraperConfig, ok := mg.(*finopsv1.ScraperConfig)
+	if !ok {
+		return errors.New(errNotScraperConfig)
+	}
+
+	genericScraperConfigMap, err := utils.GetGenericScraperConfigMap(scraperConfig)
+	if err != nil {
+		return err
+	}
+	genericScraperConfigMapUnstructured, err := clientHelper.ToUnstructured(genericScraperConfigMap)
+	if err != nil {
+		return err
+	}
+
+	genericScraperDeployment, _ := utils.GetGenericScraperDeployment(scraperConfig)
+	genericScraperDeploymentUnstructured, err := clientHelper.ToUnstructured(genericScraperDeployment)
+	if err != nil {
+		return err
+	}
+
+	err = clientHelper.UpdateObj(ctx, genericScraperConfigMapUnstructured, "configmaps", e.dynClient)
+	if err != nil {
+		return err
+	}
+
+	err = clientHelper.UpdateObj(ctx, genericScraperDeploymentUnstructured, "deployments", e.dynClient)
+	if err != nil {
+		return err
+	}
+
+	e.rec.Eventf(scraperConfig, corev1.EventTypeNormal, "Completed update", "object name: %s", scraperConfig.Name)
+	e.sinceLastUpdate[scraperConfig.Name+scraperConfig.Namespace] = time.Now()
+
+	return nil
 }
 
-func (r *ScraperConfigReconciler) createScraperFromScratch(ctx context.Context, req ctrl.Request, scraperConfig finopsv1.ScraperConfig) error {
+func (e *external) Delete(ctx context.Context, mg resource.Managed) error {
+	scraperConfig, ok := mg.(*finopsv1.ScraperConfig)
+	if !ok {
+		return errors.New(errNotScraperConfig)
+	}
 
+	scraperConfig.SetConditions(prv1.Deleting())
+
+	err := clientHelper.DeleteObj(ctx, &finopsDataTypes.ObjectRef{Name: scraperConfig.Name + "-deployment", Namespace: scraperConfig.Namespace}, "apps/v1", "deployments", e.dynClient)
+	if err != nil {
+		return fmt.Errorf("error while delete Deployment %v", err)
+	}
+
+	err = clientHelper.DeleteObj(ctx, &finopsDataTypes.ObjectRef{Name: scraperConfig.Name + "-configmap", Namespace: scraperConfig.Namespace}, "v1", "configmaps", e.dynClient)
+	if err != nil {
+		return fmt.Errorf("error while delete ConfigMap %v", err)
+	}
+
+	err = clientHelper.DeleteObj(ctx, &finopsDataTypes.ObjectRef{Name: scraperConfig.Name + "-service", Namespace: scraperConfig.Namespace}, "v1", "services", e.dynClient)
+	if err != nil {
+		return fmt.Errorf("error while delete Service %v", err)
+	}
+
+	e.rec.Eventf(scraperConfig, corev1.EventTypeNormal, "Received delete event", "removed deployment, configmap and service objects")
+	return nil
+}
+
+func createScraperFromScratch(ctx context.Context, scraperConfig *finopsv1.ScraperConfig, dynClient *dynamic.DynamicClient) error {
 	var err error
-	// Create the ConfigMap first
-	// Check if the ConfigMap exists
-	genericScraperConfigMap := &corev1.ConfigMap{}
-	_ = r.Get(context.Background(), types.NamespacedName{
-		Namespace: req.Namespace,
-		Name:      scraperConfig.Name + "-configmap",
-	}, genericScraperConfigMap)
-	// If it does not exist, create it
-	if genericScraperConfigMap.ObjectMeta.Name == "" {
-		genericScraperConfigMap, err = utils.GetGenericScraperConfigMap(scraperConfig)
-		if err != nil {
-			return err
-		}
-		err = r.Create(ctx, genericScraperConfigMap)
-		if err != nil {
-			return err
-		}
+	// Create the ConfigMap
+	genericScraperConfigMap, err := utils.GetGenericScraperConfigMap(scraperConfig)
+	if err != nil {
+		return err
+	}
+	genericScraperConfigMapUnstructured, err := clientHelper.ToUnstructured(genericScraperConfigMap)
+	if err != nil {
+		return err
+	}
+	err = clientHelper.CreateObj(ctx, genericScraperConfigMapUnstructured, "configmaps", dynClient)
+	if err != nil {
+		return fmt.Errorf("error while creating configmap: %v", err)
 	}
 
-	// Create the generic exporter deployment
-	genericScraperDeployment := &appsv1.Deployment{}
-	_ = r.Get(context.Background(), types.NamespacedName{
-		Namespace: req.Namespace,
-		Name:      scraperConfig.Name + "-deployment",
-	}, genericScraperDeployment)
-	if genericScraperDeployment.ObjectMeta.Name == "" {
-		genericScraperDeployment, err = utils.GetGenericScraperDeployment(scraperConfig)
-		if err != nil {
-			return err
-		}
-		// Create the actual deployment
-		err = r.Create(ctx, genericScraperDeployment)
-		if err != nil {
-			return err
-		}
+	// Create the generic scraper deployment
+	genericScraperDeployment, _ := utils.GetGenericScraperDeployment(scraperConfig)
+	genericScraperDeploymentUnstructured, err := clientHelper.ToUnstructured(genericScraperDeployment)
+	if err != nil {
+		return err
+	}
+	err = clientHelper.CreateObj(ctx, genericScraperDeploymentUnstructured, "deployments", dynClient)
+	if err != nil {
+		return fmt.Errorf("error while creating deployment: %v", err)
 	}
 
 	scraperConfig.Status.ActiveScraper = corev1.ObjectReference{
@@ -140,25 +305,50 @@ func (r *ScraperConfigReconciler) createScraperFromScratch(ctx context.Context, 
 		Namespace: genericScraperConfigMap.Namespace,
 		Name:      genericScraperConfigMap.Name,
 	}
-	return nil
+
+	scraperConfigUnstructured, err := clientHelper.ToUnstructured(scraperConfig)
+	if err != nil {
+		return err
+	}
+	return clientHelper.UpdateStatus(ctx, scraperConfigUnstructured, "scraperconfigs", dynClient)
 }
 
-func (r *ScraperConfigReconciler) checkScraperStatus(ctx context.Context, scraperConfig finopsv1.ScraperConfig) error {
-	genericExporterConfigMap, err := utils.GetGenericScraperConfigMap(scraperConfig)
+func checkScraperStatus(ctx context.Context, scraperConfig *finopsv1.ScraperConfig, dynClient *dynamic.DynamicClient) (bool, string, error) {
+	// Check if a deployment for this configuration already exists
+	existingObjDeploymentUnstructured, err := clientHelper.GetObj(ctx,
+		&finopsDataTypes.ObjectRef{
+			Name:      scraperConfig.Status.ActiveScraper.Name,
+			Namespace: scraperConfig.Status.ActiveScraper.Namespace},
+		"apps/v1", "deployments", dynClient)
 	if err != nil {
-		return err
+		return false, "", fmt.Errorf("could not obtain scraper deployment: %v", err)
 	}
-	genericExporterDeployment, _ := utils.GetGenericScraperDeployment(scraperConfig)
-
-	err = r.Update(ctx, genericExporterConfigMap)
+	existingObjDeployment := &appsv1.Deployment{}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(existingObjDeploymentUnstructured.Object, existingObjDeployment)
 	if err != nil {
-		return err
+		return false, "", err
+	}
+	if !comparators.CheckDeployment(*existingObjDeployment, *scraperConfig) {
+		return false, "Deployment", nil
 	}
 
-	err = r.Update(ctx, genericExporterDeployment)
+	// ConfigMap status objRef
+	existingObjConfigMapUnstructured, err := clientHelper.GetObj(ctx,
+		&finopsDataTypes.ObjectRef{
+			Name:      scraperConfig.Status.ConfigMap.Name,
+			Namespace: scraperConfig.Status.ConfigMap.Namespace},
+		"v1", "configmaps", dynClient)
 	if err != nil {
-		return err
+		return false, "", fmt.Errorf("could not obtain scraper configmap: %v", err)
+	}
+	existingObjConfigMap := &corev1.ConfigMap{}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(existingObjConfigMapUnstructured.Object, existingObjConfigMap)
+	if err != nil {
+		return false, "", err
+	}
+	if !comparators.CheckConfigMap(*existingObjConfigMap, *scraperConfig) {
+		return false, "ConfigMap", nil
 	}
 
-	return nil
+	return true, "", nil
 }
