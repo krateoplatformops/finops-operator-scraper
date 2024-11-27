@@ -53,7 +53,6 @@ const (
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs/finalizers,verbs=update
-//+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs,verbs=get;create;update
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=databaseconfigs,verbs=get;create;update
 //+kubebuilder:rbac:groups=apps,namespace=finops,resources=deployments,verbs=get;create;delete;list;update;watch
 //+kubebuilder:rbac:groups=core,namespace=finops,resources=configmaps,verbs=get;create;delete;list;update
@@ -259,12 +258,7 @@ func (e *external) Delete(ctx context.Context, mg resource.Managed) error {
 		return fmt.Errorf("error while delete ConfigMap %v", err)
 	}
 
-	err = clientHelper.DeleteObj(ctx, &finopsDataTypes.ObjectRef{Name: scraperConfig.Name + "-service", Namespace: scraperConfig.Namespace}, "v1", "services", e.dynClient)
-	if err != nil {
-		return fmt.Errorf("error while delete Service %v", err)
-	}
-
-	e.rec.Eventf(scraperConfig, corev1.EventTypeNormal, "Received delete event", "removed deployment, configmap and service objects")
+	e.rec.Eventf(scraperConfig, corev1.EventTypeNormal, "Received delete event", "removed deployment and configmap objects")
 	return nil
 }
 

@@ -1,7 +1,7 @@
 package comparators
 
 import (
-	"bytes"
+	"strings"
 
 	finopsDataTypes "github.com/krateoplatformops/finops-data-types/api/v1"
 	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
@@ -36,9 +36,9 @@ func CheckConfigMap(configMap corev1.ConfigMap, scraperConfig finopsv1.ScraperCo
 		return false
 	}
 
-	binaryData := configMap.BinaryData
-	if yamlDataFromLive, ok := binaryData["config.yaml"]; ok {
-		if !bytes.Equal(yamlData, yamlDataFromLive) {
+	if yamlDataFromLive, ok := configMap.BinaryData["config.yaml"]; ok {
+		if strings.Replace(string(yamlData), " ", "", -1) != strings.Replace(string(yamlDataFromLive), " ", "", -1) {
+			log.Logger.Info().Msg("bytes different")
 			return false
 		}
 	} else {

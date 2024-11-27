@@ -157,7 +157,7 @@ func (r *InformerFactory) StartInformer(namespace string, gvr schema.GroupVersio
 func (r *InformerFactory) getConfigurationCR(ctx context.Context, name string, namespace string) (*finopsv1.ScraperConfig, error) {
 	configurationName := &finopsDataTypes.ObjectRef{Name: name, Namespace: namespace}
 
-	ScraperConfigUnstructured, err := clientHelper.GetObj(ctx, configurationName, "finops.krateo.io/v1", "ScraperConfigs", r.DynClient)
+	ScraperConfigUnstructured, err := clientHelper.GetObj(ctx, configurationName, "finops.krateo.io/v1", "scraperconfigs", r.DynClient)
 	if err != nil {
 		return &finopsv1.ScraperConfig{}, fmt.Errorf("unable to fetch finopsv1.ScraperConfig: %v", err)
 	}
