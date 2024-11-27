@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	errNotScraperConfig = "managed resource is not an scraper scraper config custom resource"
+	errNotScraperConfig = "managed resource is not an scraper config custom resource"
 )
 
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs,verbs=get;list;watch;create;update;patch;delete
