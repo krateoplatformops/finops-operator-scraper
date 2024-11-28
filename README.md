@@ -1,6 +1,8 @@
 # FinOps Operator Scraper
 This repository is part of the wider exporting architecture for the Krateo Composable FinOps and manages the creation of the scrapers reading the FOCUS cost reports from the Prometheus Exporters.
 
+For an in-depth look at the architecture and how to configure all the components, download the summary document [here](https://github.com/krateoplatformops/finops-operator-exporter/resources/Krateo_Composable_FinOps___Full.pdf).
+
 ## Summary
 1. [Overview](#overview)
 2. [Architecture](#architecture)
@@ -51,7 +53,7 @@ spec:
 - Access to a Kubernetes v1.11.3+ cluster.
 
 ### Dependencies
-You need to install CrateDB in the cluster and configure the Krateo Database Webservice.
+You need to install CrateDB in the cluster and configure the [finops-database-handler](https://github.com/krateoplatformops/finops-database-handler).
 
 ### Installation with HELM
 ```sh
@@ -63,6 +65,3 @@ $ helm install finops-operator-scraper krateo/finops-operator-scraper
 The database-config CR is required.
 
 The scraper container is created in the namespace of the CR. The scraper container looks for a secret in the CR namespace called `registry-credentials`, configurable in the HELM chart.
-
-### Databricks token
-The Databricks token can be obtained through the dashboard UI.
