@@ -18,6 +18,7 @@ package v1
 
 import (
 	finopsDataTypes "github.com/krateoplatformops/finops-data-types/api/v1"
+	prv1 "github.com/krateoplatformops/provider-runtime/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -31,6 +32,14 @@ type ScraperConfig struct {
 
 	Spec   finopsDataTypes.ScraperConfigSpec   `json:"spec,omitempty"`
 	Status finopsDataTypes.ScraperConfigStatus `json:"status,omitempty"`
+}
+
+func (mg *ScraperConfig) GetCondition(ct prv1.ConditionType) prv1.Condition {
+	return mg.Status.GetCondition(ct)
+}
+
+func (mg *ScraperConfig) SetConditions(c ...prv1.Condition) {
+	mg.Status.SetConditions(c...)
 }
 
 //+kubebuilder:object:root=true

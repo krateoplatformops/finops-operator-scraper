@@ -21,26 +21,34 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 
+	"github.com/krateoplatformops/provider-runtime/pkg/controller"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
+	"github.com/krateoplatformops/provider-runtime/pkg/logging"
+	"github.com/krateoplatformops/provider-runtime/pkg/ratelimiter"
 
-	informer "github.com/krateoplatformops/finops-operator-scraper/internal/informers"
-
-	"github.com/krateoplatformops/finops-operator-scraper/internal/controller"
+	operatorscraper "github.com/krateoplatformops/finops-operator-scraper/internal/controller"
+	clientHelper "github.com/krateoplatformops/finops-operator-scraper/internal/helpers/kube/client"
+	informer_factory "github.com/krateoplatformops/finops-operator-scraper/internal/informers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -121,6 +129,24 @@ func main() {
 			"the manager will watch and manage resources in all namespaces")
 	}
 
+	pollingIntervalString := os.Getenv("POLLING_INTERVAL")
+	maxReconcileRateString := os.Getenv("MAX_RECONCILE_RATE")
+
+	pollingIntervalInt, err := strconv.Atoi(pollingIntervalString)
+	pollingInterval := time.Duration(time.Duration(0))
+
+	if err != nil {
+		setupLog.Error(err, "unable to parse POLLING_INTERVAL, using default value")
+	} else if pollingIntervalInt != 0 {
+		pollingInterval = time.Duration(pollingIntervalInt) * time.Second
+	}
+
+	maxReconcileRate, err := strconv.Atoi(maxReconcileRateString)
+	if err != nil {
+		setupLog.Error(err, "unable to parse MAX_RECONCILE_RATE, using default value (1)")
+		maxReconcileRate = 1
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
@@ -150,29 +176,53 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.ScraperConfigReconciler{
+	/*if err = (&controller.ScraperConfigReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ScraperConfig")
 		os.Exit(1)
-	}
+	}*/
 
-	if err = (&informer.ConfigMapReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ConfigMapInformer")
+	gv_apps := schema.GroupVersion{
+		Group:   "apps",
+		Version: "v1",
+	}
+	gv_core := schema.GroupVersion{
+		Group:   "",
+		Version: "v1",
+	}
+	cfg, err := rest.InClusterConfig()
+	if err != nil {
+		setupLog.Error(err, "unable to retrieve rest.InClusterConfig")
 		os.Exit(1)
 	}
 
-	if err = (&informer.DeploymentReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "DeploymentInformer")
+	dynClient, err := clientHelper.New(cfg)
+	if err != nil {
+		setupLog.Error(err, "unable to create dynamic client for informers")
 		os.Exit(1)
 	}
+	informerFactory := informer_factory.InformerFactory{
+		DynClient: dynClient,
+		Logger:    logging.NewLogrLogger(log.Log.WithName("operator-scraper-informer")),
+	}
+
+	informerFactory.StartInformer(watchNamespace, gv_apps.WithResource("deployments"))
+	informerFactory.StartInformer(watchNamespace, gv_core.WithResource("configmaps"))
+
+	o := controller.Options{
+		Logger:                  logging.NewLogrLogger(log.Log.WithName("operator-scraper")),
+		MaxConcurrentReconciles: maxReconcileRate,
+		PollInterval:            pollingInterval,
+		GlobalRateLimiter:       ratelimiter.NewGlobal(maxReconcileRate),
+	}
+
+	if err := operatorscraper.Setup(mgr, o); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CompositionReference")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

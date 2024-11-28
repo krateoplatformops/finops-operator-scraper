@@ -27,8 +27,8 @@ type Exporter struct {
 
 func int32Ptr(i int32) *int32 { return &i }
 
-func GetGenericScraperDeployment(scraperConfig finopsv1.ScraperConfig) (*appsv1.Deployment, error) {
-	return &appsv1.Deployment{
+func GetGenericScraperDeployment(scraperConfig *finopsv1.ScraperConfig) (*appsv1.Deployment, error) {
+	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      scraperConfig.Name + "-deployment",
 			Namespace: scraperConfig.Namespace,
@@ -95,10 +95,12 @@ func GetGenericScraperDeployment(scraperConfig finopsv1.ScraperConfig) (*appsv1.
 				},
 			},
 		},
-	}, nil
+	}
+	deployment.APIVersion = "apps/v1"
+	return deployment, nil
 }
 
-func GetGenericScraperConfigMap(scraperConfig finopsv1.ScraperConfig) (*corev1.ConfigMap, error) {
+func GetGenericScraperConfigMap(scraperConfig *finopsv1.ScraperConfig) (*corev1.ConfigMap, error) {
 	scraperConfigFile := ScraperConfigFile{}
 	databaseConfigRef := finopsDataTypes.ObjectRef{}
 	exporter := Exporter{}
@@ -121,7 +123,7 @@ func GetGenericScraperConfigMap(scraperConfig finopsv1.ScraperConfig) (*corev1.C
 
 	binaryData := make(map[string][]byte)
 	binaryData["config.yaml"] = yamlData
-	return &corev1.ConfigMap{
+	configmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      scraperConfig.Name + "-configmap",
 			Namespace: scraperConfig.Namespace,
@@ -135,5 +137,7 @@ func GetGenericScraperConfigMap(scraperConfig finopsv1.ScraperConfig) (*corev1.C
 			},
 		},
 		BinaryData: binaryData,
-	}, nil
+	}
+	configmap.APIVersion = "v1"
+	return configmap, nil
 }
