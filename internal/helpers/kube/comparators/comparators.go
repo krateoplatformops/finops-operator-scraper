@@ -21,6 +21,7 @@ func CheckConfigMap(configMap corev1.ConfigMap, scraperConfig finopsv1.ScraperCo
 	databaseConfigRef := finopsDataTypes.ObjectRef{}
 	exporter := utils.Exporter{}
 
+	exporter.MetricType = scraperConfig.Spec.MetricType
 	exporter.Url = scraperConfig.Spec.Url
 	exporter.PollingIntervalHours = scraperConfig.Spec.PollingIntervalHours
 	exporter.TableName = scraperConfig.Spec.TableName
