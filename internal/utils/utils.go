@@ -25,7 +25,7 @@ type Exporter struct {
 	MetricType           string `yaml:"metricType"`
 }
 
-func int32Ptr(i int32) *int32 { return &i }
+func Int32Ptr(i int32) *int32 { return &i }
 
 func GetGenericScraperDeployment(scraperConfig *finopsv1.ScraperConfig) (*appsv1.Deployment, error) {
 	deployment := &appsv1.Deployment{
@@ -42,7 +42,7 @@ func GetGenericScraperDeployment(scraperConfig *finopsv1.ScraperConfig) (*appsv1
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: int32Ptr(1),
+			Replicas: Int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"scraper": scraperConfig.Name,
