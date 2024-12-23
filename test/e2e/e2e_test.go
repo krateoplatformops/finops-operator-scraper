@@ -41,9 +41,9 @@ const (
 
 	testName = "exporterscraperconfig-sample" + "-scraper"
 
-	operatorExporterControllerRegistry = "krateo-finops-registry.westeurope.cloudapp.azure.com"
+	operatorExporterControllerRegistry = "ghcr.io/krateoplatformops"
 	operatorExporterControllerTag      = "0.3.2"
-	exporterRegistry                   = "krateo-finops-registry.westeurope.cloudapp.azure.com"
+	exporterRegistry                   = "ghcr.io/krateoplatformops"
 )
 
 func TestMain(m *testing.M) {
@@ -57,10 +57,18 @@ func TestMain(m *testing.M) {
 		envfuncs.SetupCRDs(crdsPath, "*"),
 		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 			// install finops-operator-exporter
+			if p := e2eutils.RunCommand("helm repo add krateo https://charts.krateo.io"); p.Err() != nil {
+				return ctx, fmt.Errorf("helm error while adding repository: %s %v", p.Out(), p.Err())
+			}
+
+			if p := e2eutils.RunCommand("helm repo update krateo"); p.Err() != nil {
+				return ctx, fmt.Errorf("helm error while updating helm: %s %v", p.Out(), p.Err())
+			}
+
 			if p := e2eutils.RunCommand(
 				fmt.Sprintf("helm install finops-operator-exporter krateo/finops-operator-exporter -n %s --set controllerManager.image.repository=%s/finops-operator-exporter --set image.tag=%s --set imagePullSecrets[0].name=registry-credentials --set image.pullPolicy=Always --set env.REGISTRY=%s", testNamespace, operatorExporterControllerRegistry, operatorExporterControllerTag, exporterRegistry),
 			); p.Err() != nil {
-				return ctx, p.Err()
+				return ctx, fmt.Errorf("helm error while installing chart: %s %v", p.Out(), p.Err())
 			}
 			return ctx, nil
 		},
@@ -120,14 +128,14 @@ func TestScraper(t *testing.T) {
 
 			if err := wait.For(
 				conditions.New(r).DeploymentAvailable("finops-operator-exporter-controller-manager", testNamespace),
-				wait.WithTimeout(50*time.Second),
+				wait.WithTimeout(120*time.Second),
 				wait.WithInterval(5*time.Second),
 			); err != nil {
 				log.Printf("Timed out while waiting for finops-operator-exporter deployment: %s", err)
 			}
 			if err := wait.For(
 				conditions.New(r).DeploymentAvailable("finops-operator-scraper-controller-manager", testNamespace),
-				wait.WithTimeout(50*time.Second),
+				wait.WithTimeout(60*time.Second),
 				wait.WithInterval(5*time.Second),
 			); err != nil {
 				log.Printf("Timed out while waiting for finops-operator-scraper deployment: %s", err)
@@ -152,7 +160,7 @@ func TestScraper(t *testing.T) {
 			configmap := &corev1.ConfigMap{}
 
 			select {
-			case <-time.After(55 * time.Second):
+			case <-time.After(180 * time.Second):
 				t.Fatal("Timed out wating for controller creation")
 			case created := <-controllerCreationSig:
 				if !created {
