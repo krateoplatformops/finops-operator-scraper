@@ -60,7 +60,7 @@ func TestMain(m *testing.M) {
 			if p := e2eutils.RunCommand(
 				fmt.Sprintf("helm install finops-operator-exporter krateo/finops-operator-exporter -n %s --set controllerManager.image.repository=%s/finops-operator-exporter --set image.tag=%s --set imagePullSecrets[0].name=registry-credentials --set image.pullPolicy=Always --set env.REGISTRY=%s", testNamespace, operatorExporterControllerRegistry, operatorExporterControllerTag, exporterRegistry),
 			); p.Err() != nil {
-				return ctx, p.Err()
+				return ctx, fmt.Errorf("error while installing chart: %v", p.Err())
 			}
 			return ctx, nil
 		},
