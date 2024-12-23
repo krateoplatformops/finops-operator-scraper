@@ -36,7 +36,7 @@ spec:
     port: 8080
     targetPort: 8080
 ---
-# helm install finops-operator-scraper krateo/finops-operator-scraper -n finops-test --set controllerManager.image.repository=krateo-finops-registry.westeurope.cloudapp.azure.com/finops-operator-scraper --set image.tag=0.3.2 --set imagePullSecrets[0].name=registry-credentials --set image.pullPolicy=Always --set env.REGISTRY=krateo-finops-registry.westeurope.cloudapp.azure.com --dry-run
+# helm install finops-operator-scraper krateo/finops-operator-scraper -n finops-test --set controllerManager.image.repository=ghcr.io/krateoplatformops/finops-operator-scraper --set image.tag=0.3.1 --set imagePullSecrets[0].name=registry-credentials --set image.pullPolicy=Always --set env.REGISTRY=ghcr.io/krateoplatformops --dry-run
 # Source: finops-operator-scraper/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -46,10 +46,10 @@ metadata:
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: operator-scraper
     app.kubernetes.io/part-of: operator-scraper
-    helm.sh/chart: finops-operator-scraper-0.3.2
+    helm.sh/chart: finops-operator-scraper-0.3.1
     app.kubernetes.io/name: finops-operator-scraper
     app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.3.2"
+    app.kubernetes.io/version: "0.3.1"
     app.kubernetes.io/managed-by: Helm
   annotations:
     {}
@@ -60,15 +60,15 @@ kind: ConfigMap
 metadata:
   name: finops-operator-scraper-repo-envvar
   labels:
-    helm.sh/chart: finops-operator-scraper-0.3.2
+    helm.sh/chart: finops-operator-scraper-0.3.1
     app.kubernetes.io/name: finops-operator-scraper
     app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.3.2"
+    app.kubernetes.io/version: "0.3.1"
     app.kubernetes.io/managed-by: Helm
 data:
   MAX_RECONCILE_RATE: "1"
   POLLING_INTERVAL: "300"
-  REGISTRY: "krateo-finops-registry.westeurope.cloudapp.azure.com"
+  REGISTRY: "ghcr.io/krateoplatformops"
   REGISTRY_CREDENTIALS: "registry-credentials"
   URL_DB_WEBSERVICE: "http://finops-database-handler.finops:8088"
 ---
@@ -81,10 +81,10 @@ metadata:
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: operator-scraper
     app.kubernetes.io/part-of: operator-scraper
-    helm.sh/chart: finops-operator-scraper-0.3.2
+    helm.sh/chart: finops-operator-scraper-0.3.1
     app.kubernetes.io/name: finops-operator-scraper
     app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.3.2"
+    app.kubernetes.io/version: "0.3.1"
     app.kubernetes.io/managed-by: Helm
 rules:
 - apiGroups:
@@ -125,10 +125,10 @@ kind: Role
 metadata:
   name: finops-operator-scraper-manager
   labels:
-    helm.sh/chart: finops-operator-scraper-0.3.2
+    helm.sh/chart: finops-operator-scraper-0.3.1
     app.kubernetes.io/name: finops-operator-scraper
     app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.3.2"
+    app.kubernetes.io/version: "0.3.1"
     app.kubernetes.io/managed-by: Helm
 rules:
 - apiGroups:
@@ -188,10 +188,10 @@ metadata:
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: operator-scraper
     app.kubernetes.io/part-of: operator-scraper
-    helm.sh/chart: finops-operator-scraper-0.3.2
+    helm.sh/chart: finops-operator-scraper-0.3.1
     app.kubernetes.io/name: finops-operator-scraper
     app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.3.2"
+    app.kubernetes.io/version: "0.3.1"
     app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -211,10 +211,10 @@ metadata:
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: operator-scraper
     app.kubernetes.io/part-of: operator-scraper
-    helm.sh/chart: finops-operator-scraper-0.3.2
+    helm.sh/chart: finops-operator-scraper-0.3.1
     app.kubernetes.io/name: finops-operator-scraper
     app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.3.2"
+    app.kubernetes.io/version: "0.3.1"
     app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -234,10 +234,10 @@ metadata:
     app.kubernetes.io/component: manager
     app.kubernetes.io/part-of: operator-scraper
     control-plane: controller-manager
-    helm.sh/chart: finops-operator-scraper-0.3.2
+    helm.sh/chart: finops-operator-scraper-0.3.1
     app.kubernetes.io/name: finops-operator-scraper
     app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.3.2"
+    app.kubernetes.io/version: "0.3.1"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -271,7 +271,7 @@ spec:
         envFrom:
         - configMapRef:
             name: finops-operator-scraper-repo-envvar
-        image: krateo-finops-registry.westeurope.cloudapp.azure.com/finops-operator-scraper:0.3.2
+        image: ghcr.io/krateoplatformops/finops-operator-scraper:0.3.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:

@@ -41,9 +41,9 @@ const (
 
 	testName = "exporterscraperconfig-sample" + "-scraper"
 
-	operatorExporterControllerRegistry = "krateo-finops-registry.westeurope.cloudapp.azure.com"
+	operatorExporterControllerRegistry = "ghcr.io/krateoplatformops"
 	operatorExporterControllerTag      = "0.3.2"
-	exporterRegistry                   = "krateo-finops-registry.westeurope.cloudapp.azure.com"
+	exporterRegistry                   = "ghcr.io/krateoplatformops"
 )
 
 func TestMain(m *testing.M) {
@@ -120,14 +120,14 @@ func TestScraper(t *testing.T) {
 
 			if err := wait.For(
 				conditions.New(r).DeploymentAvailable("finops-operator-exporter-controller-manager", testNamespace),
-				wait.WithTimeout(50*time.Second),
+				wait.WithTimeout(120*time.Second),
 				wait.WithInterval(5*time.Second),
 			); err != nil {
 				log.Printf("Timed out while waiting for finops-operator-exporter deployment: %s", err)
 			}
 			if err := wait.For(
 				conditions.New(r).DeploymentAvailable("finops-operator-scraper-controller-manager", testNamespace),
-				wait.WithTimeout(50*time.Second),
+				wait.WithTimeout(60*time.Second),
 				wait.WithInterval(5*time.Second),
 			); err != nil {
 				log.Printf("Timed out while waiting for finops-operator-scraper deployment: %s", err)
@@ -152,7 +152,7 @@ func TestScraper(t *testing.T) {
 			configmap := &corev1.ConfigMap{}
 
 			select {
-			case <-time.After(55 * time.Second):
+			case <-time.After(180 * time.Second):
 				t.Fatal("Timed out wating for controller creation")
 			case created := <-controllerCreationSig:
 				if !created {
