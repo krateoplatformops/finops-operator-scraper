@@ -59,7 +59,7 @@ func GetGenericScraperDeployment(scraperConfig *finopsv1.ScraperConfig) (*appsv1
 					Containers: []corev1.Container{
 						{
 							Name:            "scraper",
-							Image:           strings.TrimSuffix(os.Getenv("REGISTRY"), "/") + "/finops-prometheus-scraper-generic:latest",
+							Image:           strings.TrimSuffix(os.Getenv("REGISTRY"), "/") + "/finops-prometheus-scraper-generic:" + strings.TrimSuffix(os.Getenv("SCRAPER_VERSION"), "latest"),
 							ImagePullPolicy: corev1.PullAlways,
 							VolumeMounts: []corev1.VolumeMount{
 								{
