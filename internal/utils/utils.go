@@ -9,20 +9,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	finopsDataTypes "github.com/krateoplatformops/finops-data-types/api/v1"
+	finopsdatatypes "github.com/krateoplatformops/finops-data-types/api/v1"
 	finopsv1 "github.com/krateoplatformops/finops-operator-scraper/api/v1"
 )
 
 type ScraperConfigFile struct {
-	DatabaseConfigRef finopsDataTypes.ObjectRef `yaml:"databaseConfigRef"`
+	DatabaseConfigRef finopsdatatypes.ObjectRef `yaml:"databaseConfigRef"`
 	Exporter          Exporter                  `yaml:"exporter"`
 }
 
 type Exporter struct {
-	Url                  string `yaml:"url"`
-	PollingIntervalHours int    `yaml:"pollingIntervalHours"`
-	TableName            string `yaml:"tableName"`
-	MetricType           string `yaml:"metricType"`
+	API                  finopsdatatypes.API `yaml:"api"`
+	PollingIntervalHours int                 `yaml:"pollingIntervalHours"`
+	TableName            string              `yaml:"tableName"`
+	MetricType           string              `yaml:"metricType"`
 }
 
 func Int32Ptr(i int32) *int32 { return &i }
@@ -102,11 +102,11 @@ func GetGenericScraperDeployment(scraperConfig *finopsv1.ScraperConfig) (*appsv1
 
 func GetGenericScraperConfigMap(scraperConfig *finopsv1.ScraperConfig) (*corev1.ConfigMap, error) {
 	scraperConfigFile := ScraperConfigFile{}
-	databaseConfigRef := finopsDataTypes.ObjectRef{}
+	databaseConfigRef := finopsdatatypes.ObjectRef{}
 	exporter := Exporter{}
 
 	exporter.MetricType = scraperConfig.Spec.MetricType
-	exporter.Url = scraperConfig.Spec.Url
+	exporter.API = scraperConfig.Spec.API
 	exporter.PollingIntervalHours = scraperConfig.Spec.PollingIntervalHours
 	exporter.TableName = scraperConfig.Spec.TableName
 

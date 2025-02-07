@@ -1,8 +1,6 @@
 # FinOps Operator Scraper
 This repository is part of the wider exporting architecture for the Krateo Composable FinOps and manages the creation of the scrapers reading the FOCUS cost reports from the Prometheus Exporters.
 
-For an in-depth look at the architecture and how to configure all the components, download the summary document [here](https://github.com/krateoplatformops/finops-operator-exporter/resources/Krateo_Composable_FinOps___Full.pdf).
-
 ## Summary
 1. [Overview](#overview)
 2. [Architecture](#architecture)
@@ -37,7 +35,12 @@ metadata:
 spec:
   scraperConfig:
     tableName: # tableName in the database to upload the data to
-    url: # path to the exporter
+    api: # the API to call with the prometheus exporter
+      path: # the path inside the domain
+      method: GET # the method to call the API with
+      endpointRef: # secret with the url in the format http(s)://host:port
+        name: 
+        namespace:
     pollingIntervalHours: # int
     scraperDatabaseConfigRef: # See above kind DatabaseConfig
       name: # name of the databaseConfigRef CR 

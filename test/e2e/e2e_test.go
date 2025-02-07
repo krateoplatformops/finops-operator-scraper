@@ -42,8 +42,9 @@ const (
 	testName = "exporterscraperconfig-sample" + "-scraper"
 
 	operatorExporterControllerRegistry = "ghcr.io/krateoplatformops"
-	operatorExporterControllerTag      = "0.3.2"
+	operatorExporterControllerTag      = "0.4.0"
 	exporterRegistry                   = "ghcr.io/krateoplatformops"
+	exporterVersion                    = "0.4.0"
 )
 
 func TestMain(m *testing.M) {
@@ -66,7 +67,7 @@ func TestMain(m *testing.M) {
 			}
 
 			if p := e2eutils.RunCommand(
-				fmt.Sprintf("helm install finops-operator-exporter krateo/finops-operator-exporter -n %s --set controllerManager.image.repository=%s/finops-operator-exporter --set image.tag=%s --set imagePullSecrets[0].name=registry-credentials --set image.pullPolicy=Always --set env.REGISTRY=%s", testNamespace, operatorExporterControllerRegistry, operatorExporterControllerTag, exporterRegistry),
+				fmt.Sprintf("helm install finops-operator-exporter krateo/finops-operator-exporter -n %s --set controllerManager.image.repository=%s/finops-operator-exporter --set image.tag=%s --set imagePullSecrets[0].name=registry-credentials --set image.pullPolicy=Always --set env.REGISTRY=%s --set env.SCRAPER_VERSION=%s", testNamespace, operatorExporterControllerRegistry, operatorExporterControllerTag, exporterRegistry, exporterVersion),
 			); p.Err() != nil {
 				return ctx, fmt.Errorf("helm error while installing chart: %s %v", p.Out(), p.Err())
 			}
@@ -176,6 +177,16 @@ func TestScraper(t *testing.T) {
 			err = r.Get(ctx, testName+"-configmap", testNamespace, configmap)
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			crGet := &operatorscraperapi.ScraperConfig{}
+			err = r.Get(ctx, testName, testNamespace, crGet)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if crGet.Status.ActiveScraper.Name == "" || crGet.Status.ConfigMap.Name == "" {
+				t.Fatal(fmt.Errorf("missing status update"))
 			}
 
 			return ctx

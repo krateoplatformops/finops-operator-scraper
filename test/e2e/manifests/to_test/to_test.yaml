@@ -1,3 +1,11 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webservice-mock-endpoint
+  namespace: finops-test
+stringData:
+  server-url: 
+---
 apiVersion: finops.krateo.io/v1
 kind: ExporterScraperConfig
 metadata:
@@ -5,10 +13,14 @@ metadata:
   namespace: finops-test
 spec:
   exporterConfig:
-    url: http://<host>:<port>/subscriptions/<subscription_id>/providers/Microsoft.Consumption/usageDetails
+    api: 
+      path: /subscriptions/<subscription_id>/providers/Microsoft.Consumption/usageDetails
+      method: GET
+      endpointRef:
+        name: webservice-mock-endpoint
+        namespace: finops-test
     requireAuthentication: false
     metricType: cost
-    authenticationMethod: 
     pollingIntervalHours: 1
     additionalVariables:
       # Variables that contain only uppercase letters are taken from environment variables

@@ -22,7 +22,7 @@ func CheckConfigMap(configMap corev1.ConfigMap, scraperConfig finopsv1.ScraperCo
 	exporter := utils.Exporter{}
 
 	exporter.MetricType = scraperConfig.Spec.MetricType
-	exporter.Url = scraperConfig.Spec.Url
+	exporter.API = scraperConfig.Spec.API
 	exporter.PollingIntervalHours = scraperConfig.Spec.PollingIntervalHours
 	exporter.TableName = scraperConfig.Spec.TableName
 
