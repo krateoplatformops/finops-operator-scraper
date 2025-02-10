@@ -37,7 +37,7 @@ spec:
     tableName: # tableName in the database to upload the data to
     api: # the API to call with the prometheus exporter
       path: # the path inside the domain
-      method: GET # the method to call the API with
+      verb: GET # the method to call the API with
       endpointRef: # secret with the url in the format http(s)://host:port
         name: 
         namespace:
