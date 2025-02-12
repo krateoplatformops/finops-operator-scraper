@@ -49,15 +49,7 @@ type contextKey string
 
 var (
 	testenv env.Environment
-	scheme  = runtime.NewScheme()
 )
-
-func init() {
-	// Add the required schemes
-	operatorscraperapi.AddToScheme(scheme)
-	appsv1.AddToScheme(scheme)
-	corev1.AddToScheme(scheme)
-}
 
 const (
 	testNamespace   = "finops-test" // If you changed this test environment, you need to change the RoleBinding in the "deploymentsPath" folder
@@ -122,6 +114,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestScraper(t *testing.T) {
+	mgrCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	controllerCreationSig := make(chan bool, 1)
 	create := features.New("Create").
 		WithLabel("type", "CR and resources").
@@ -131,14 +126,14 @@ func TestScraper(t *testing.T) {
 				t.Fail()
 			}
 
+			operatorscraperapi.AddToScheme(r.GetScheme())
+			r.WithNamespace(testNamespace)
+
 			// Start the controller manager
-			err = startTestManager(ctx)
+			err = startTestManager(mgrCtx, r.GetScheme())
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			operatorscraperapi.AddToScheme(r.GetScheme())
-			r.WithNamespace(testNamespace)
 
 			ctx = context.WithValue(ctx, contextKey("client"), r)
 
@@ -151,6 +146,15 @@ func TestScraper(t *testing.T) {
 				t.Fatalf("Failed due to error: %s", err)
 			}
 
+			if err := wait.For(
+				conditions.New(r).DeploymentAvailable("webservice-api-mock-deployment", testNamespace),
+				wait.WithTimeout(120*time.Second),
+				wait.WithInterval(5*time.Second),
+			); err != nil {
+				t.Fatal(fmt.Errorf("timed out while waiting for webservice-api-mock-deployment: %w", err))
+			}
+
+			// Create test resources
 			err = decoder.DecodeEachFile(
 				ctx, os.DirFS(toTest), "*",
 				decoder.CreateHandler(r),
@@ -390,11 +394,17 @@ func TestScraper(t *testing.T) {
 			return ctx
 		}).Feature()
 
+	cleanup := features.New("Cleanup").
+		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			cancel()
+			return ctx
+		}).Feature()
+
 	// test feature
-	testenv.Test(t, create, delete, modify)
+	testenv.Test(t, create, delete, modify, cleanup)
 }
 
-func startTestManager(ctx context.Context) error {
+func startTestManager(ctx context.Context, scheme *runtime.Scheme) error {
 	os.Setenv("REGISTRY", "ghcr.io/krateoplatformops")
 	os.Setenv("REGISTRY_CREDENTIALS", "registry-credentials")
 	os.Setenv("SCRAPER_VERSION", "0.4.0")
