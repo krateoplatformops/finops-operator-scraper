@@ -36,24 +36,6 @@ spec:
     port: 8080
     targetPort: 8080
 ---
-# helm install finops-operator-scraper krateo/finops-operator-scraper -n finops-test --set controllerManager.image.repository=ghcr.io/krateoplatformops/finops-operator-scraper --set image.tag=0.4.0 --set imagePullSecrets[0].name=registry-credentials --set image.pullPolicy=Always --set env.REGISTRY=ghcr.io/krateoplatformops --dry-run
-# Source: finops-operator-scraper/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: finops-operator-scraper-controller-manager
-  labels:
-    app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: operator-scraper
-    app.kubernetes.io/part-of: operator-scraper
-    helm.sh/chart: finops-operator-scraper-0.4.0
-    app.kubernetes.io/name: finops-operator-scraper
-    app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.4.0"
-    app.kubernetes.io/managed-by: Helm
-  annotations:
-    {}
----
 # Source: finops-operator-scraper/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -200,7 +182,7 @@ roleRef:
   name: 'finops-operator-scraper-manager'
 subjects:
 - kind: ServiceAccount
-  name: finops-operator-scraper-controller-manager
+  name: default
   namespace: 'finops-test'
 ---
 # Source: finops-operator-scraper/templates/rolebinding.yaml
@@ -223,77 +205,5 @@ roleRef:
   name: 'finops-operator-scraper-leader-election'
 subjects:
 - kind: ServiceAccount
-  name: finops-operator-scraper-controller-manager
+  name: default
   namespace: 'finops-test'
----
-# Source: finops-operator-scraper/templates/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: finops-operator-scraper-controller-manager
-  labels:
-    app.kubernetes.io/component: manager
-    app.kubernetes.io/part-of: operator-scraper
-    control-plane: controller-manager
-    helm.sh/chart: finops-operator-scraper-0.4.0
-    app.kubernetes.io/name: finops-operator-scraper
-    app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.4.0"
-    app.kubernetes.io/managed-by: Helm
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      control-plane: controller-manager
-      app.kubernetes.io/name: finops-operator-scraper
-      app.kubernetes.io/instance: finops-operator-scraper
-  template:
-    metadata:
-      labels:
-        control-plane: controller-manager
-        app.kubernetes.io/name: finops-operator-scraper
-        app.kubernetes.io/instance: finops-operator-scraper
-      annotations:
-        kubectl.kubernetes.io/default-container: manager
-    spec:
-      containers:
-      - args:
-        - --health-probe-bind-address=:8081
-        - --leader-elect
-        command:
-        - /manager
-        env:
-        - name: WATCH_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: 
-        envFrom:
-        - configMapRef:
-            name: finops-operator-scraper-repo-envvar
-        image: ghcr.io/krateoplatformops/finops-operator-scraper:0.4.0
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8081
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        name: manager
-        readinessProbe:
-          httpGet:
-            path: /readyz
-            port: 8081
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        resources:
-          {}
-        securityContext:
-          null
-      imagePullSecrets:
-      - name: registry-credentials
-      securityContext:
-        runAsNonRoot: true
-      serviceAccountName: finops-operator-scraper-controller-manager
-      terminationGracePeriodSeconds: 10

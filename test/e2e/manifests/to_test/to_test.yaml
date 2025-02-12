@@ -4,7 +4,7 @@ metadata:
   name: webservice-mock-endpoint
   namespace: finops-test
 stringData:
-  server-url: 
+  server-url: http://<host>:<port>
 ---
 apiVersion: finops.krateo.io/v1
 kind: ExporterScraperConfig
