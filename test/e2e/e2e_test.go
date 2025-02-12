@@ -122,7 +122,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestScraper(t *testing.T) {
-	controllerCreationSig := make(chan bool, 2)
+	controllerCreationSig := make(chan bool, 1)
 	create := features.New("Create").
 		WithLabel("type", "CR and resources").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
