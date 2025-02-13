@@ -394,14 +394,8 @@ func TestScraper(t *testing.T) {
 			return ctx
 		}).Feature()
 
-	cleanup := features.New("Cleanup").
-		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			cancel()
-			return ctx
-		}).Feature()
-
 	// test feature
-	testenv.Test(t, create, delete, modify, cleanup)
+	testenv.Test(t, create, delete, modify)
 }
 
 func startTestManager(ctx context.Context, scheme *runtime.Scheme) error {
