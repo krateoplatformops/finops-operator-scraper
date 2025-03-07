@@ -21,14 +21,14 @@ spec:
         namespace: finops-test
     requireAuthentication: false
     metricType: cost
-    pollingIntervalHours: 1
+    pollingInterval: "5s"
     additionalVariables:
       # Variables that contain only uppercase letters are taken from environment variables
       subscription_id: d3sad326-42a4-5434-9623-a3sd22fefb84
       host: WEBSERVICE_API_MOCK_SERVICE_HOST
       port: WEBSERVICE_API_MOCK_SERVICE_PORT
   scraperConfig:
-    pollingIntervalHours: 1
+    pollingInterval: "5s"
     tableName: testfocus
     scraperDatabaseConfigRef:
       name: cratedb-config

@@ -41,7 +41,7 @@ spec:
       endpointRef: # secret with the url in the format http(s)://host:port
         name: 
         namespace:
-    pollingIntervalHours: # int
+    pollingInterval: # time duration, e.g., 12h30m
     scraperDatabaseConfigRef: # See above kind DatabaseConfig
       name: # name of the databaseConfigRef CR 
       namespace: # namespace of the databaseConfigRef CR
