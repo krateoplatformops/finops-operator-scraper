@@ -19,10 +19,10 @@ type ScraperConfigFile struct {
 }
 
 type Exporter struct {
-	API                  finopsdatatypes.API `yaml:"api"`
-	PollingIntervalHours int                 `yaml:"pollingIntervalHours"`
-	TableName            string              `yaml:"tableName"`
-	MetricType           string              `yaml:"metricType"`
+	API             finopsdatatypes.API `yaml:"api"`
+	PollingInterval metav1.Duration     `yaml:"pollingInterval"`
+	TableName       string              `yaml:"tableName"`
+	MetricType      string              `yaml:"metricType"`
 }
 
 func Int32Ptr(i int32) *int32 { return &i }
@@ -107,7 +107,7 @@ func GetGenericScraperConfigMap(scraperConfig *finopsv1.ScraperConfig) (*corev1.
 
 	exporter.MetricType = scraperConfig.Spec.MetricType
 	exporter.API = scraperConfig.Spec.API
-	exporter.PollingIntervalHours = scraperConfig.Spec.PollingIntervalHours
+	exporter.PollingInterval = scraperConfig.Spec.PollingInterval
 	exporter.TableName = scraperConfig.Spec.TableName
 
 	databaseConfigRef.Name = scraperConfig.Spec.ScraperDatabaseConfigRef.Name
