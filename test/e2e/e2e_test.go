@@ -59,7 +59,7 @@ const (
 
 	testName = "exporterscraperconfig-sample" + "-scraper"
 
-	operatorExporterControllerRegistry = "krateo-finops-registry.westeurope.cloudapp.azure.com"
+	operatorExporterControllerRegistry = "ghcr.io/krateoplatformops"
 	operatorExporterControllerTag      = "0.4.0"
 	exporterRegistry                   = "ghcr.io/krateoplatformops"
 	exporterVersion                    = "0.4.0"
