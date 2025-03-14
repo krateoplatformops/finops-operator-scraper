@@ -47,6 +47,9 @@ spec:
       namespace: # namespace of the databaseConfigRef CR
 ```
 
+### Example Use Case for Pricing Visualization
+The Composable FinOps can be used to display pricing in the Krateo Composable Portal cards through a dedicated composition. You can find out more here: [krateo-v2-template-finops-example-pricing-vm-azure](https://github.com/krateoplatformops/krateo-v2-template-finops-example-pricing-vm-azure).
+
 ## Configuration
 
 ### Prerequisites
