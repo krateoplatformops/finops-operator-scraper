@@ -7,6 +7,18 @@ stringData:
   server-url: http://<host>:<port>
 ---
 apiVersion: finops.krateo.io/v1
+kind: DatabaseConfig
+metadata:
+  name: cratedb-config
+  namespace: finops-test
+spec:
+  passwordSecretRef:
+    key: password
+    name: cratedb-system-credentials
+    namespace: krateo-system
+  username: system
+---
+apiVersion: finops.krateo.io/v1
 kind: ExporterScraperConfig
 metadata:
   name: exporterscraperconfig-sample
