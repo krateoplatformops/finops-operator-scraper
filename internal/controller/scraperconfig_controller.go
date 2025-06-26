@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,6 +41,7 @@ import (
 	"github.com/krateoplatformops/provider-runtime/pkg/ratelimiter"
 	"github.com/krateoplatformops/provider-runtime/pkg/reconciler"
 	"github.com/krateoplatformops/provider-runtime/pkg/resource"
+	"github.com/rs/zerolog/log"
 
 	clientHelper "github.com/krateoplatformops/finops-operator-scraper/internal/helpers/kube/client"
 	"github.com/krateoplatformops/finops-operator-scraper/internal/helpers/kube/comparators"
@@ -136,6 +138,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (reconciler
 		"apps/v1", "deployments", e.dynClient)
 	if err != nil {
 		e.rec.Eventf(scraperConfig, corev1.EventTypeWarning, "could not get scraperconfig deployment", "object name: %s", scraperConfig.Status.ActiveScraper.Name)
+		log.Error().Err(err).Msg("could not get scraperconfig deployment")
 		return reconciler.ExternalObservation{
 			ResourceExists: false,
 		}, nil
@@ -149,6 +152,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (reconciler
 		"v1", "configmaps", e.dynClient)
 	if err != nil {
 		e.rec.Eventf(scraperConfig, corev1.EventTypeWarning, "could not get scraperconfig configmap", "object name: %s", scraperConfig.Status.ConfigMap.Name)
+		log.Error().Err(err).Msg("could not get scraperconfig configmap")
 		return reconciler.ExternalObservation{
 			ResourceExists: false,
 		}, nil
@@ -189,7 +193,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) error {
 	}
 
 	scraperConfig.SetConditions(prv1.Creating())
-
+	log.Info().Msgf("Starting create for %s", scraperConfig.Name)
 	err := createScraperFromScratch(ctx, scraperConfig, e.dynClient)
 	if err != nil {
 		return err
@@ -270,33 +274,36 @@ func createScraperFromScratch(ctx context.Context, scraperConfig *finopsv1.Scrap
 	if err != nil {
 		return err
 	}
-	if scraperConfig.Status.ConfigMap.Name == "" {
-		err = clientHelper.CreateObj(ctx, genericScraperConfigMapUnstructured, "configmaps", dynClient)
-		if err != nil {
+
+	err = clientHelper.CreateObj(ctx, genericScraperConfigMapUnstructured, "configmaps", dynClient)
+	if err != nil {
+		if !strings.Contains(err.Error(), "already exists") {
 			return fmt.Errorf("error while creating configmap: %v", err)
+		} else {
+			log.Warn().Err(err).Msg("resource already exists, skipping...")
 		}
-		// Update status
-		scraperConfig.Status.ConfigMap = corev1.ObjectReference{
-			Kind:      scraperConfig.Kind,
-			Namespace: scraperConfig.Namespace,
-			Name:      scraperConfig.Name,
-		}
-		scraperConfigUnstructured, err := clientHelper.ToUnstructured(scraperConfig)
-		if err != nil {
-			return fmt.Errorf("error while converting scraperconfigs to unstructured: %v", err)
-		}
-		err = clientHelper.UpdateStatus(ctx, scraperConfigUnstructured, "scraperconfigs", dynClient)
-		if err != nil {
-			return fmt.Errorf("error while updating status for scraperconfig: %v", err)
-		}
-		scraperConfigUnstructured, err = clientHelper.GetObj(ctx, &finopsDataTypes.ObjectRef{Name: scraperConfig.Name, Namespace: scraperConfig.Namespace}, scraperConfig.APIVersion, "scraperconfigs", dynClient)
-		if err != nil {
-			return fmt.Errorf("error while getting updated scraperconfig (status): %v", err)
-		}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(scraperConfigUnstructured.Object, scraperConfig)
-		if err != nil {
-			return fmt.Errorf("error while converting unstructured configmap to configmap: %v", err)
-		}
+	}
+	// Update status
+	scraperConfig.Status.ConfigMap = corev1.ObjectReference{
+		Kind:      genericScraperConfigMap.Kind,
+		Namespace: genericScraperConfigMap.Namespace,
+		Name:      genericScraperConfigMap.Name,
+	}
+	scraperConfigUnstructured, err := clientHelper.ToUnstructured(scraperConfig)
+	if err != nil {
+		return fmt.Errorf("error while converting scraperconfigs to unstructured: %v", err)
+	}
+	err = clientHelper.UpdateStatus(ctx, scraperConfigUnstructured, "scraperconfigs", dynClient)
+	if err != nil {
+		return fmt.Errorf("error while updating status for scraperconfig: %v", err)
+	}
+	scraperConfigUnstructured, err = clientHelper.GetObj(ctx, &finopsDataTypes.ObjectRef{Name: scraperConfig.Name, Namespace: scraperConfig.Namespace}, scraperConfig.APIVersion, "scraperconfigs", dynClient)
+	if err != nil {
+		return fmt.Errorf("error while getting updated scraperconfig (status): %v", err)
+	}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(scraperConfigUnstructured.Object, scraperConfig)
+	if err != nil {
+		return fmt.Errorf("error while converting unstructured configmap to configmap: %v", err)
 	}
 
 	// Create the generic scraper deployment
@@ -305,33 +312,36 @@ func createScraperFromScratch(ctx context.Context, scraperConfig *finopsv1.Scrap
 	if err != nil {
 		return err
 	}
-	if scraperConfig.Status.ActiveScraper.Name == "" {
-		err = clientHelper.CreateObj(ctx, genericScraperDeploymentUnstructured, "deployments", dynClient)
-		if err != nil {
+
+	err = clientHelper.CreateObj(ctx, genericScraperDeploymentUnstructured, "deployments", dynClient)
+	if err != nil {
+		if !strings.Contains(err.Error(), "already exists") {
 			return fmt.Errorf("error while creating deployment: %v", err)
+		} else {
+			log.Warn().Err(err).Msg("resource already exists, skipping...")
 		}
-		// Update status
-		scraperConfig.Status.ActiveScraper = corev1.ObjectReference{
-			Kind:      genericScraperDeployment.Kind,
-			Namespace: genericScraperDeployment.Namespace,
-			Name:      genericScraperDeployment.Name,
-		}
-		scraperConfigUnstructured, err := clientHelper.ToUnstructured(scraperConfig)
-		if err != nil {
-			return fmt.Errorf("error while converting scraperconfigs to unstructured: %v", err)
-		}
-		err = clientHelper.UpdateStatus(ctx, scraperConfigUnstructured, "scraperconfigs", dynClient)
-		if err != nil {
-			return fmt.Errorf("error while updating status for scraperconfig: %v", err)
-		}
-		scraperConfigUnstructured, err = clientHelper.GetObj(ctx, &finopsDataTypes.ObjectRef{Name: scraperConfig.Name, Namespace: scraperConfig.Namespace}, scraperConfig.APIVersion, "scraperconfigs", dynClient)
-		if err != nil {
-			return fmt.Errorf("error while getting updated scraperconfig (status): %v", err)
-		}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(scraperConfigUnstructured.Object, scraperConfig)
-		if err != nil {
-			return fmt.Errorf("error while converting unstructured deployment to deployment: %v", err)
-		}
+	}
+	// Update status
+	scraperConfig.Status.ActiveScraper = corev1.ObjectReference{
+		Kind:      genericScraperDeployment.Kind,
+		Namespace: genericScraperDeployment.Namespace,
+		Name:      genericScraperDeployment.Name,
+	}
+	scraperConfigUnstructured, err = clientHelper.ToUnstructured(scraperConfig)
+	if err != nil {
+		return fmt.Errorf("error while converting scraperconfigs to unstructured: %v", err)
+	}
+	err = clientHelper.UpdateStatus(ctx, scraperConfigUnstructured, "scraperconfigs", dynClient)
+	if err != nil {
+		return fmt.Errorf("error while updating status for scraperconfig: %v", err)
+	}
+	scraperConfigUnstructured, err = clientHelper.GetObj(ctx, &finopsDataTypes.ObjectRef{Name: scraperConfig.Name, Namespace: scraperConfig.Namespace}, scraperConfig.APIVersion, "scraperconfigs", dynClient)
+	if err != nil {
+		return fmt.Errorf("error while getting updated scraperconfig (status): %v", err)
+	}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(scraperConfigUnstructured.Object, scraperConfig)
+	if err != nil {
+		return fmt.Errorf("error while converting unstructured deployment to deployment: %v", err)
 	}
 
 	return nil
