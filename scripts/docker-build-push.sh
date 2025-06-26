@@ -6,7 +6,6 @@ else
     CONTAINER_TOOL=${CONTAINER_TOOL}
 fi
 
-$(echo $CONTAINER_TOOL) build -t ${IMG} .
-$(echo $CONTAINER_TOOL) push ${IMG}
+$(echo $CONTAINER_TOOL) buildx build --tag ${IMG} --push --platform linux/amd64,linux/arm64 .
 
 
