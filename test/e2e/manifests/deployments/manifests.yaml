@@ -18,9 +18,17 @@ spec:
       containers:
       - name: webservice
         imagePullPolicy: Always
-        image: ghcr.io/krateoplatformops/finops-webservice-api-mock:latest
+        image: ghcr.io/krateoplatformops/finops-webservice-api-mock:0.3.0c
         ports:
         - containerPort: 8080
+      #   volumeMounts:
+      #   - name: report-volume
+      #     mountPath: /tmp/webservice-api-mock/report_csv/configmap.csv
+      # volumes:
+      # - name: report-volume
+      #   hostPath:
+      #     path: /configmap.csv
+      #     type: File
 ---
 apiVersion: v1
 kind: Service
@@ -35,25 +43,6 @@ spec:
   - protocol: TCP
     port: 8080
     targetPort: 8080
----
-# Source: finops-operator-scraper/templates/configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: finops-operator-scraper-repo-envvar
-  labels:
-    helm.sh/chart: finops-operator-scraper-0.4.0
-    app.kubernetes.io/name: finops-operator-scraper
-    app.kubernetes.io/instance: finops-operator-scraper
-    app.kubernetes.io/version: "0.4.0"
-    app.kubernetes.io/managed-by: Helm
-data:
-  MAX_RECONCILE_RATE: "1"
-  POLLING_INTERVAL: "300"
-  REGISTRY: "ghcr.io/krateoplatformops"
-  SCRAPER_VERSION: 0.4.0
-  REGISTRY_CREDENTIALS: "registry-credentials"
-  URL_DB_WEBSERVICE: "http://finops-database-handler.finops:8088"
 ---
 # Source: finops-operator-scraper/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1

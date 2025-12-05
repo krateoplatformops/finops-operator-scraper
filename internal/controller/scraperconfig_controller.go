@@ -49,7 +49,8 @@ import (
 )
 
 const (
-	errNotScraperConfig = "managed resource is not an scraper config custom resource"
+	errNotScraperConfig      = "managed resource is not an scraper config custom resource"
+	restartedAnnotationLabel = "kubectl.kubernetes.io/restartedAt"
 )
 
 //+kubebuilder:rbac:groups=finops.krateo.io,namespace=finops,resources=scraperconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -220,6 +221,11 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) error {
 	}
 
 	genericScraperDeployment, _ := utils.GetGenericScraperDeployment(scraperConfig)
+	// Set the annotation to trigger a rollout
+	if genericScraperDeployment.Spec.Template.Annotations == nil {
+		genericScraperDeployment.Spec.Template.Annotations = map[string]string{}
+	}
+	genericScraperDeployment.Spec.Template.Annotations[restartedAnnotationLabel] = time.Now().Format(time.RFC3339)
 	genericScraperDeploymentUnstructured, err := clientHelper.ToUnstructured(genericScraperDeployment)
 	if err != nil {
 		return err
