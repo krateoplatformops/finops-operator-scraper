@@ -9,7 +9,7 @@ stringData:
 apiVersion: finops.krateo.io/v1
 kind: DatabaseConfig
 metadata:
-  name: cratedb-config
+  name: finops-database-handler
   namespace: finops-test
 spec:
   passwordSecretRef:
@@ -26,22 +26,19 @@ metadata:
 spec:
   exporterConfig:
     api: 
-      path: /subscriptions/<subscription_id>/providers/Microsoft.Consumption/usageDetails
-      method: GET
+      path: /costs/csv
+      verb: GET
       endpointRef:
         name: webservice-mock-endpoint
-        namespace: finops-test
-    requireAuthentication: false
+        namespace: krateo-system
     metricType: cost
-    pollingInterval: "5s"
+    pollingInterval: "1m"
     additionalVariables:
-      # Variables that contain only uppercase letters are taken from environment variables
-      subscription_id: d3sad326-42a4-5434-9623-a3sd22fefb84
       host: WEBSERVICE_API_MOCK_SERVICE_HOST
       port: WEBSERVICE_API_MOCK_SERVICE_PORT
   scraperConfig:
     pollingInterval: "5s"
     tableName: testfocus
     scraperDatabaseConfigRef:
-      name: cratedb-config
+      name: finops-database-handler
       namespace: finops-test

@@ -1,6 +1,7 @@
 package comparators
 
 import (
+	"os"
 	"strings"
 
 	finopsDataTypes "github.com/krateoplatformops/finops-data-types/api/v1"
@@ -102,10 +103,28 @@ func CheckDeployment(deployment appsv1.Deployment, scraperConfig finopsv1.Scrape
 		return false
 	}
 
+	imageName := strings.TrimSuffix(os.Getenv("REGISTRY"), "/")
+	imageVersion := os.Getenv("SCRAPER_VERSION")
+	image := os.Getenv("SCRAPER_NAME")
+
+	if imageVersion == "" {
+		imageVersion = "latest"
+	}
+	if image == "" {
+		image = "finops-prometheus-scraper"
+	}
+
+	imageName += "/" + image + ":" + imageVersion
+
 	if len(deployment.Spec.Template.Spec.Containers) != 1 {
 		log.Logger.Debug().Msg("Container not equal to 1")
 		return false
 	} else {
+		if deployment.Spec.Template.Spec.Containers[0].Image != imageName {
+			log.Logger.Debug().Msgf("Image name/version not matching: found %s, want %s", deployment.Spec.Template.Spec.Containers[0].Image, imageName)
+			return false
+		}
+
 		if len(deployment.Spec.Template.Spec.Containers[0].VolumeMounts) == 0 {
 			log.Logger.Debug().Msg("No volume mount found")
 			return false

@@ -60,9 +60,9 @@ const (
 	testName = "exporterscraperconfig-sample" + "-scraper"
 
 	operatorExporterControllerRegistry = "ghcr.io/krateoplatformops"
-	operatorExporterControllerTag      = "0.4.0"
+	operatorExporterControllerTag      = "0.5.1"
 	exporterRegistry                   = "ghcr.io/krateoplatformops"
-	exporterVersion                    = "0.4.0"
+	exporterVersion                    = "0.5.2"
 )
 
 func TestMain(m *testing.M) {
@@ -401,7 +401,9 @@ func TestScraper(t *testing.T) {
 func startTestManager(ctx context.Context, scheme *runtime.Scheme) error {
 	os.Setenv("REGISTRY", "ghcr.io/krateoplatformops")
 	os.Setenv("REGISTRY_CREDENTIALS", "registry-credentials")
-	os.Setenv("SCRAPER_VERSION", "0.4.0")
+	os.Setenv("SCRAPER_VERSION", "0.5.1")
+	os.Setenv("SCRAPER_NAME", "finops-prometheus-scraper")
+
 	os.Setenv("URL_DB_WEBSERVICE", "http://finops-database-handler."+testNamespace+":8088")
 
 	var metricsAddr string

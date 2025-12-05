@@ -19,15 +19,29 @@ type ScraperConfigFile struct {
 }
 
 type Exporter struct {
-	API             finopsdatatypes.API `yaml:"api"`
-	PollingInterval metav1.Duration     `yaml:"pollingInterval"`
-	TableName       string              `yaml:"tableName"`
-	MetricType      string              `yaml:"metricType"`
+	API             finopsdatatypes.API      `yaml:"api"`
+	PollingInterval metav1.Duration          `yaml:"pollingInterval"`
+	TableName       string                   `yaml:"tableName"`
+	MetricType      string                   `yaml:"metricType"`
+	Generic         *finopsdatatypes.Generic `yaml:"generic"`
 }
 
 func Int32Ptr(i int32) *int32 { return &i }
 
 func GetGenericScraperDeployment(scraperConfig *finopsv1.ScraperConfig) (*appsv1.Deployment, error) {
+	imageName := strings.TrimSuffix(os.Getenv("REGISTRY"), "/")
+	imageVersion := os.Getenv("SCRAPER_VERSION")
+	image := os.Getenv("SCRAPER_NAME")
+
+	if imageVersion == "" {
+		imageVersion = "latest"
+	}
+	if image == "" {
+		image = "finops-prometheus-scraper"
+	}
+
+	imageName += "/" + image + ":" + imageVersion
+
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      scraperConfig.Name + "-deployment",
@@ -59,7 +73,7 @@ func GetGenericScraperDeployment(scraperConfig *finopsv1.ScraperConfig) (*appsv1
 					Containers: []corev1.Container{
 						{
 							Name:            "scraper",
-							Image:           strings.TrimSuffix(os.Getenv("REGISTRY"), "/") + "/finops-prometheus-scraper-generic:" + strings.TrimSuffix(os.Getenv("SCRAPER_VERSION"), "latest"),
+							Image:           imageName,
 							ImagePullPolicy: corev1.PullAlways,
 							VolumeMounts: []corev1.VolumeMount{
 								{
@@ -106,6 +120,7 @@ func GetGenericScraperConfigMap(scraperConfig *finopsv1.ScraperConfig) (*corev1.
 	exporter := Exporter{}
 
 	exporter.MetricType = scraperConfig.Spec.MetricType
+	exporter.Generic = scraperConfig.Spec.Generic
 	exporter.API = scraperConfig.Spec.API
 	exporter.PollingInterval = scraperConfig.Spec.PollingInterval
 	exporter.TableName = scraperConfig.Spec.TableName
