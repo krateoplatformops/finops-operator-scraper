@@ -47,19 +47,15 @@ spec:
       namespace: # namespace of the databaseConfigRef CR
 ```
 
-### Example Use Case for Pricing Visualization
-The Composable FinOps can be used to display pricing in the Krateo Composable Portal cards through a dedicated composition. You can find out more here: [krateo-v2-template-finops-example-pricing-vm-azure](https://github.com/krateoplatformops/krateo-v2-template-finops-example-pricing-vm-azure).
+### Example Use Case
+The Composable FinOps can be used to display pricing, costs and optimizations in the Krateo Composable Portal through a dedicated blueprint. You can find out more here: 
+- [azure-vm-finops](https://github.com/krateoplatformops-blueprints/azure-vm-finops).
+- [azure-compute-optimization-toolkit](github.com/krateoplatformops-blueprints/azure-compute-optimization-toolkit)
 
 ## Configuration
 
-### Prerequisites
-- go version v1.21.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
-
 ### Dependencies
-You need to install CrateDB in the cluster and configure the [finops-database-handler](https://github.com/krateoplatformops/finops-database-handler).
+You need to install CrateDB in the cluster and configure the [finops-database-handler](https://github.com/krateoplatformops/finops-database-handler). This is done automatically if installed with the Krateo Installer.
 
 ### Installation with HELM
 ```sh
@@ -67,7 +63,3 @@ $ helm repo add krateo https://charts.krateo.io
 $ helm repo update krateo
 $ helm install finops-operator-scraper krateo/finops-operator-scraper
 ```
-### Configuration
-The database-config CR is required.
-
-The scraper container is created in the namespace of the CR. The scraper container looks for a secret in the CR namespace called `registry-credentials`, configurable in the HELM chart.
