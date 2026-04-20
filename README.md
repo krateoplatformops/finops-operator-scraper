@@ -1,65 +1,44 @@
-# FinOps Operator Scraper
-This repository is part of the wider exporting architecture for the Krateo Composable FinOps and manages the creation of the scrapers reading the FOCUS cost reports from the Prometheus Exporters.
+# finops-operator-scraper
 
-## Summary
-1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [Examples](#examples)
-4. [Configuration](#configuration)
+A Kubernetes operator that creates and manages generic scrapers to read FOCUS cost reports from Prometheus exporters and upload them to a database, as part of the Krateo Composable FinOps architecture.
 
-## Overview
-This component is tasked with the creation of a generic scraper, according to the description given in a Custom Resource (CR). After the creation of the CR, the operator reads the "scraper" configuration part and creates two resources: a deployment with a generic prometheus scraper inside and a configmap containing the configuration. The scraper parses the prometheus data and obtains the given database-config to upload all metrics to a database.
+📖 **Full documentation**: [docs.krateo.io — finops-operator-scraper](https://docs.krateo.io/key-concepts/kcf/finops-components/finops-operator-scraper)
 
-## Architecture
-![Krateo Composable FinOps Operator Scraper](resources/images/KCF-operator-scraper.png)
-
-## Examples
-```yaml
-apiVersion: finops.krateo.io/v1
-kind: DatabaseConfig
-metadata:
-  name: # DatabaseConfig name
-  namespace: # DatabaseConfig namespace
-spec:
-  username: # username string
-  passwordSecretRef: # object reference to secret with password
-    name: # secret name
-    namespace: # secret namespace
-    key: # secret key
 ---
-apiVersion: finops.krateo.io/v1
-kind: ScraperConfig
-metadata:
-  name: # ScraperConfig name
-  namespace: # ScraperConfig namespace
-spec:
-  scraperConfig:
-    tableName: # tableName in the database to upload the data to
-    api: # the API to call with the prometheus exporter
-      path: # the path inside the domain
-      verb: GET # the method to call the API with
-      endpointRef: # secret with the url in the format http(s)://host:port
-        name: 
-        namespace:
-    pollingInterval: # time duration, e.g., 12h30m
-    scraperDatabaseConfigRef: # See above kind DatabaseConfig
-      name: # name of the databaseConfigRef CR 
-      namespace: # namespace of the databaseConfigRef CR
+
+## Key features
+
+- Automatically provisions a Prometheus scraper deployment and configmap from a single Custom Resource
+- Parses Prometheus-format metrics and uploads them to CrateDB via the finops-database-handler
+- Configurable polling intervals and database targets per scraper instance
+
+## Requirements
+
+| Dependency | Minimum version |
+|------------|----------------|
+| Kubernetes | v1.31 |
+| Krateo | v3.0.0 |
+| finops-database-handler | v0.5.3 |
+| CrateDB | v5.9.6 |
+
+## Install
+
+```bash
+helm repo add krateo https://charts.krateo.io
+helm repo update
+helm install finops-operator-scraper krateo/finops-operator-scraper --namespace krateo-system --create-namespace
 ```
 
-### Example Use Case
-The Composable FinOps can be used to display pricing, costs and optimizations in the Krateo Composable Portal through a dedicated blueprint. You can find out more here: 
-- [azure-vm-finops](https://github.com/krateoplatformops-blueprints/azure-vm-finops).
-- [azure-compute-optimization-toolkit](github.com/krateoplatformops-blueprints/azure-compute-optimization-toolkit)
+> For advanced installation options, custom values, and upgrade instructions, see the [installation guide](https://docs.krateo.io/key-concepts/kcf/finops-components/finops-operator-scraper).
 
-## Configuration
+## Environment variables
 
-### Dependencies
-You need to install CrateDB in the cluster and configure the [finops-database-handler](https://github.com/krateoplatformops/finops-database-handler). This is done automatically if installed with the Krateo Installer.
-
-### Installation with HELM
-```sh
-$ helm repo add krateo https://charts.krateo.io
-$ helm repo update krateo
-$ helm install finops-operator-scraper krateo/finops-operator-scraper
-```
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `POLLING_INTERVAL` | No | `300` | Polling interval of the operator in seconds |
+| `MAX_RECONCILE_RATE` | No | `1` | Number of workers for the operator |
+| `REGISTRY` | No | `ghcr.io/krateoplatformops` | Registry to pull the exporter image from |
+| `REGISTRY_CREDENTIALS` | No | `registry-credentials` | Name of the secret holding registry credentials |
+| `SCRAPER_VERSION` | No | `0.5.0` | Version of the exporter image |
+| `SCRAPER_NAME` | No | `finops-prometheus-exporter` | Name of the exporter image |
+| `URL_DB_WEBSERVICE` | No | http://finops-database-handler.finops:8088 | URL for the finops-database-handler service |
